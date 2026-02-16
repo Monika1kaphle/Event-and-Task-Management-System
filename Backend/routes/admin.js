@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const adminController = require('../controllers/adminController'); // This must exist!
+const adminController = require('../controllers/adminController'); 
 
 // GET: Dashboard Data
 router.get('/dashboard', adminController.getDashboardData);
 
-// --- NEW ROUTE: Fetch Departments for Dropdowns ---
+// --- NEW ROUTE: Fetch Users for Department Head Dropdown ---
+// This matches the fetch('http://localhost:3000/api/admin/users') in your frontend
+router.get('/users', adminController.getUsers);
+
+// GET: Fetch Departments for Dropdowns
 router.get('/departments', adminController.getDepartments);
 
 // POST: Add Department
