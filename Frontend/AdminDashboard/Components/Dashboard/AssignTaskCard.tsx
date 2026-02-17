@@ -8,10 +8,14 @@ import { Button } from '../../ui/Button'
 export function AssignTaskCard() {
   const [isLoading, setIsLoading] = useState(false)
   const [dbDepartments, setDbDepartments] = useState<{ value: string; label: string }[]>([])
+  const [dbHeads, setDbHeads] = useState<{ value: string; label: string }[]>([])
+  // Added to store the full department objects for head_id lookup
+  const [rawDepartments, setRawDepartments] = useState<any[]>([])
   
-  // States for Popup Messages
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+
+  const today = new Date().toISOString().split('T')[0]
 
   const [taskData, setTaskData] = useState({
     department_id: '',
@@ -22,22 +26,31 @@ export function AssignTaskCard() {
   })
 
   useEffect(() => {
-    const fetchDepts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/admin/departments')
-        if (response.ok) {
-          const data = await response.json()
-          const formatted = data.map((d: any) => ({
-            value: d.id.toString(),
-            label: d.name
-          }))
-          setDbDepartments(formatted)
+        const deptRes = await fetch('http://localhost:3000/api/admin/departments')
+        if (deptRes.ok) {
+          const data = await deptRes.json()
+          setRawDepartments(data) // Store the full data (including head_id)
+          setDbDepartments(data.map((d: any) => ({ 
+            value: d.id.toString(), 
+            label: d.name 
+          })))
+        }
+
+        const userRes = await fetch('http://localhost:3000/api/admin/users')
+        if (userRes.ok) {
+          const data = await userRes.json()
+          setDbHeads(data.map((u: any) => ({ 
+            value: u.id.toString(), 
+            label: u.name 
+          })))
         }
       } catch (err) {
-        console.error("Failed to load departments:", err)
+        console.error("Failed to load departments or users:", err)
       }
     }
-    fetchDepts()
+    fetchData()
   }, [])
 
   // Auto-hide timers for popups
@@ -54,6 +67,18 @@ export function AssignTaskCard() {
       return () => clearTimeout(timer)
     }
   }, [errorMessage])
+
+  // New function to handle automatic head selection when department changes
+  const handleDepartmentChange = (deptId: string) => {
+    const selectedDept = rawDepartments.find(d => d.id.toString() === deptId)
+    
+    setTaskData({ 
+      ...taskData, 
+      department_id: deptId,
+      // Automatically set the assigned_to_id if the department has a head_id in the DB
+      assigned_to_id: selectedDept?.head_id ? selectedDept.head_id.toString() : '' 
+    })
+  }
 
   const handleChange = (field: string, value: string) => {
     setTaskData({ ...taskData, [field]: value })
@@ -86,112 +111,23 @@ export function AssignTaskCard() {
     }
   }
 
-  // --- POPUP PORTAL LOGIC ---
   const popup =
     successMessage || errorMessage
       ? ReactDOM.createPortal(
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 99999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px'
-            }}
-          >
-            {/* Backdrop */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.85)',
-                backdropFilter: 'blur(4px)'
-              }}
-              onClick={() => {
-                setSuccessMessage('')
-                setErrorMessage('')
-              }}
-            />
-
-            {/* Success Popup */}
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)' }} onClick={() => { setSuccessMessage(''); setErrorMessage(''); }} />
             {successMessage && (
-              <div
-                className="bg-[#161b22] border-2 border-[#2d5f5d] rounded-2xl max-w-md w-full"
-                style={{
-                  position: 'relative',
-                  padding: '40px 20px',
-                  boxShadow: '0 0 50px rgba(45,95,93,0.3)',
-                  zIndex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center'
-                }}
-              >
-                <button
-                  onClick={() => setSuccessMessage('')}
-                  style={{
-                    position: 'absolute',
-                    top: '16px',
-                    right: '16px',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9ca3af'
-                  }}
-                >
-                  <X size={24} />
-                </button>
-                
-                <div className="h-16 w-16 rounded-full bg-[#2d5f5d]/15 flex items-center justify-center mb-5">
-                  <CheckCircle2 className="h-10 w-10 text-[#4fd1c5]" />
-                </div>
+              <div className="bg-[#161b22] border-2 border-[#2d5f5d] rounded-2xl max-w-md w-full" style={{ position: 'relative', padding: '40px 20px', boxShadow: '0 0 50px rgba(45,95,93,0.3)', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                <button onClick={() => setSuccessMessage('')} style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}><X size={24} /></button>
+                <div className="h-16 w-16 rounded-full bg-[#2d5f5d]/15 flex items-center justify-center mb-5"><CheckCircle2 className="h-10 w-10 text-[#4fd1c5]" /></div>
                 <h3 className="text-2xl font-bold text-white mb-2">Success!</h3>
                 <p className="text-base text-gray-300">{successMessage}</p>
               </div>
             )}
-
-            {/* Error Popup */}
             {errorMessage && (
-              <div
-                className="bg-[#161b22] border-2 border-red-500/70 rounded-2xl max-w-md w-full"
-                style={{
-                  position: 'relative',
-                  padding: '40px 20px',
-                  boxShadow: '0 0 50px rgba(239,68,68,0.2)',
-                  zIndex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center'
-                }}
-              >
-                <button
-                  onClick={() => setErrorMessage('')}
-                  style={{
-                    position: 'absolute',
-                    top: '16px',
-                    right: '16px',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9ca3af'
-                  }}
-                >
-                  <X size={24} />
-                </button>
-                
-                <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center mb-5">
-                  <AlertCircle className="h-10 w-10 text-red-500" />
-                </div>
+              <div className="bg-[#161b22] border-2 border-red-500/70 rounded-2xl max-w-md w-full" style={{ position: 'relative', padding: '40px 20px', boxShadow: '0 0 50px rgba(239,68,68,0.2)', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                <button onClick={() => setErrorMessage('')} style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}><X size={24} /></button>
+                <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center mb-5"><AlertCircle className="h-10 w-10 text-red-500" /></div>
                 <h3 className="text-2xl font-bold text-white mb-2">Error</h3>
                 <p className="text-base text-red-300">{errorMessage}</p>
               </div>
@@ -206,22 +142,15 @@ export function AssignTaskCard() {
       {popup}
       <div className="bg-[#161b22]/80 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl hover:border-[#2d5f5d]/30 transition-all duration-300">
         <div className="flex items-center space-x-3 mb-6">
-          <div className="p-2 rounded-lg bg-[#2d5f5d]/10 text-[#2d5f5d]">
-            <UserPlus className="h-5 w-5" />
-          </div>
-          <h3 className="text-lg font-semibold text-white">
-            Assign Task to Department Heads
-          </h3>
+          <div className="p-2 rounded-lg bg-[#2d5f5d]/10 text-[#2d5f5d]"><UserPlus className="h-5 w-5" /></div>
+          <h3 className="text-lg font-semibold text-white">Assign Task to Department Heads</h3>
         </div>
 
-        <form
-          onSubmit={handleAssign}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"
-        >
+        <form onSubmit={handleAssign} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <Select
             label="Department"
             value={taskData.department_id}
-            onChange={(e) => handleChange('department_id', e.target.value)}
+            onChange={(e) => handleDepartmentChange(e.target.value)} // Using the new handler
             options={dbDepartments}
           />
           
@@ -229,10 +158,7 @@ export function AssignTaskCard() {
             label="Department Head"
             value={taskData.assigned_to_id}
             onChange={(e) => handleChange('assigned_to_id', e.target.value)}
-            options={[
-              { value: '1', label: 'John Doe' }, 
-              { value: '2', label: 'Jane Smith' },
-            ]}
+            options={dbHeads}
           />
 
           <div className="md:col-span-2">
@@ -258,17 +184,13 @@ export function AssignTaskCard() {
                type="date"
                label="Deadline" 
                value={taskData.deadline}
+               min={today}
                onChange={(e) => handleChange('deadline', e.target.value)}
              />
           </div>
 
           <div className="md:col-span-1">
-            <Button
-              type="submit"
-              fullWidth
-              isLoading={isLoading}
-              className="mb-[2px]"
-            >
+            <Button type="submit" fullWidth isLoading={isLoading} className="mb-[2px]">
               <CheckSquare className="h-4 w-4 mr-2" />
               Assign Task
             </Button>
