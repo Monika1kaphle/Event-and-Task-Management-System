@@ -1,21 +1,19 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+
 import { LoginPage } from './components/auth/LoginPage'
-import { DashboardPage } from './components/dashboard/DashboardPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { UserManagement } from './pages/UserManagement'
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
-    // Check for existing authentication token
     const token = localStorage.getItem('token')
-    if (token) {
-      setIsLoggedIn(true)
-    }
+    if (token) setIsLoggedIn(true)
   }, [])
 
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true)
-  }
+  const handleLoginSuccess = () => setIsLoggedIn(true)
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -23,9 +21,17 @@ export default function App() {
     setIsLoggedIn(false)
   }
 
-  return isLoggedIn ? (
-    <DashboardPage onLogout={handleLogout} />
-  ) : (
-    <LoginPage onLoginSuccess={handleLoginSuccess} />
+  if (!isLoggedIn) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />
+  }
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/dashboard" element={<DashboardPage onLogout={handleLogout} />} />
+        <Route path="/users" element={<UserManagement />} />
+        <Route path="*" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </Router>
   )
 }
