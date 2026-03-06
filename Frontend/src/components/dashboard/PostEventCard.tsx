@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
-import { CalendarPlus } from 'lucide-react'
+import { CalendarPlus, Upload, X } from 'lucide-react'
 import { Input } from '../ui/Input'
 import { Textarea } from '../ui/Textarea'
 import { Button } from '../ui/Button'
 
 export function PostEventCard() {
   const [isLoading, setIsLoading] = useState(false)
+  const [posterFile, setPosterFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   
-  // 1. Add State to hold form data
   const [formData, setFormData] = useState({
     title: '',
     date: '',
@@ -15,9 +16,21 @@ export function PostEventCard() {
     description: ''
   })
 
-  // 2. Helper to update state when user types
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setPosterFile(file)
+      setPreviewUrl(URL.createObjectURL(file))
+    }
+  }
+
+  const removePoster = () => {
+    setPosterFile(null)
+    setPreviewUrl(null)
   }
 
   const handlePost = async (e: React.FormEvent) => {
@@ -25,26 +38,31 @@ export function PostEventCard() {
     setIsLoading(true)
 
     try {
-      // 3. Send data to Backend
-      const response = await fetch('http://localhost:5000/api/admin/post-event', {
+      // Use FormData to send files
+      const dataToSend = new FormData()
+      dataToSend.append('title', formData.title)
+      dataToSend.append('event_date', formData.date)
+      dataToSend.append('event_time', formData.time)
+      dataToSend.append('description', formData.description)
+      if (posterFile) {
+        dataToSend.append('poster', posterFile)
+      }
+
+      const response = await fetch('http://localhost:3000/api/admin/post-event', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: formData.title,
-          event_date: formData.date, // Matches SQL column 'event_date'
-          event_time: formData.time, // Matches SQL column 'event_time'
-          description: formData.description
-        })
+        // Note: Do NOT set Content-Type header when sending FormData; 
+        // the browser will set it automatically with the correct boundary.
+        body: dataToSend
       })
 
-      const data = await response.json()
+      const result = await response.json()
 
       if (response.ok) {
         alert('Event Posted Successfully!')
-        // Clear form
-        setFormData({ title: '', date: '', time: '', description: '' }) 
+        setFormData({ title: '', date: '', time: '', description: '' })
+        removePoster()
       } else {
-        alert('Error: ' + data.error)
+        alert('Error: ' + result.error)
       }
     } catch (error) {
       console.error('Error posting event:', error)
@@ -71,6 +89,7 @@ export function PostEventCard() {
             onChange={handleChange} 
             label="Event Title" 
             placeholder="Annual Team Retreat" 
+            required
           />
           <Input 
             name="date" 
@@ -78,6 +97,7 @@ export function PostEventCard() {
             value={formData.date} 
             onChange={handleChange} 
             label="Date" 
+            required
           />
           <Input 
             name="time" 
@@ -85,6 +105,7 @@ export function PostEventCard() {
             value={formData.time} 
             onChange={handleChange} 
             label="Time" 
+            required
           />
         </div>
 
@@ -93,11 +114,40 @@ export function PostEventCard() {
           value={formData.description}
           onChange={handleChange}
           label="Description"
-          placeholder="Enter event details, location, and agenda..."
+          placeholder="Enter event details..."
           rows={3}
+          required
         />
 
-        <div className="flex justify-end">
+        {/* Poster Upload Section */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-400">Event Poster</label>
+          {!previewUrl ? (
+            <div className="border-2 border-dashed border-gray-700 rounded-xl p-8 flex flex-col items-center justify-center hover:border-[#2d5f5d]/50 transition-colors cursor-pointer relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <Upload className="h-8 w-8 text-gray-500 mb-2" />
+              <p className="text-sm text-gray-500">Click to upload poster (JPG, PNG)</p>
+            </div>
+          ) : (
+            <div className="relative w-full max-w-xs rounded-lg overflow-hidden border border-gray-700">
+              <img src={previewUrl} alt="Preview" className="w-full h-40 object-cover" />
+              <button
+                type="button"
+                onClick={removePoster}
+                className="absolute top-2 right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+              >
+                <X className="h-4 w-4 text-white" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end pt-4">
           <Button
             type="submit"
             isLoading={isLoading}

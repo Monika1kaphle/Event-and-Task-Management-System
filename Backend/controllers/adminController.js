@@ -3,8 +3,6 @@ const pool = require('../config/db');
 // --- 1. Modified: Fetch only Department Heads for the dropdown ---
 exports.getUsers = async (req, res) => {
     try {
-        // We filter by role to ensure 'admin' doesn't show up in the dropdown
-        // Assuming your department heads will have the role 'department_head'
         const [users] = await pool.query(
             "SELECT id, name, email FROM users WHERE role = 'department_head'"
         );
@@ -18,8 +16,6 @@ exports.getUsers = async (req, res) => {
 // --- 2. Modified: Fetch departments WITH their Head Names ---
 exports.getDepartments = async (req, res) => {
     try {
-        // Using LEFT JOIN to get the head's name from the users table 
-        // using the head_id stored in the departments table
         const query = `
             SELECT 
                 d.id, 
@@ -65,8 +61,6 @@ exports.addDepartment = async (req, res) => {
     }
 };
 
-// ... keep assignTask and postEvent as they were
-
 // 4. Assign Task
 exports.assignTask = async (req, res) => {
     const { title, description, department_id, assigned_to_id, deadline } = req.body;
@@ -87,19 +81,41 @@ exports.assignTask = async (req, res) => {
     }
 };
 
-// 5. Post Event
+// 5. Post Event (UPDATED TO HANDLE POSTER UPLOAD AND PAST DATE VALIDATION)
 exports.postEvent = async (req, res) => {
     const { title, event_date, event_time, description } = req.body;
     
     if (!title || !event_date) return res.status(400).json({ error: "Title and Date are required" });
 
+    // Validate against past date/time
+    const selectedDateTime = new Date(`${event_date}T${event_time || '00:00'}`);
+    const now = new Date();
+    if (selectedDateTime < now) {
+        return res.status(400).json({ error: "Cannot post an event in the past!" });
+    }
+
+    // req.file is created by the multer middleware in your routes
+    const poster_url = req.file ? `/uploads/posters/${req.file.filename}` : null;
+
     try {
+        // Updated query to include the poster_url column
         await pool.query(
-            'INSERT INTO events (title, event_date, event_time, description) VALUES (?, ?, ?, ?)',
-            [title, event_date, event_time, description || '']
+            'INSERT INTO events (title, event_date, event_time, description, poster_url) VALUES (?, ?, ?, ?, ?)',
+            [title, event_date, event_time, description || '', poster_url]
         );
         res.status(201).json({ message: 'Event posted successfully' });
     } catch (err) {
-        res.status(500).json({ error: "Database error" });
+        console.error("Post Event Error:", err);
+        res.status(500).json({ error: "Database error: " + err.message });
+    }
+};
+
+// Add this to your controllers/adminController.js
+exports.getEvents = async (req, res) => {
+    try {
+        const [events] = await pool.query("SELECT * FROM events ORDER BY event_date DESC");
+        res.status(200).json(events);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch events" });
     }
 };

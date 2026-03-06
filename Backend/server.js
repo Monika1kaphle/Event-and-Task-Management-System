@@ -3,41 +3,33 @@ require('express-async-errors');
 
 const express = require('express');
 const cors = require('cors');
-
-// Import Routes
-const authRoutes = require('./routes/auth'); // Make sure these files exist
-const userRoutes = require('./routes/users');
+const path = require('path');
 const adminRoutes = require('./routes/admin'); 
+const eventRoutes = require('./routes/eventRoutes'); // Your new file
 
 const app = express();
 
-// --- MIDDLEWARE ---
-app.use(cors({
-  origin: 'http://localhost:5173', // Your Vite Frontend URL
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE']
-}));
-
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // --- ROUTES ---
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-
-// This line connects your Admin Logic (Add Dept, Fetch Users)
+// Admin routes (e.g., users, departments)
 app.use('/api/admin', adminRoutes); 
 
-// --- ERROR HANDLER ---
+// Event routes (e.g., get, post) - Mapped here
+app.use('/api/events', eventRoutes); 
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// --- CENTRALIZED VALIDATION ---
+app.post('/api/admin/validate-event-date', (req, res) => { /* ... your logic ... */ });
+
+// Error Handling
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error'
-  });
+  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
-// --- START SERVER ---
-// Changed to 3000 to match your Frontend fetch calls
-const port = process.env.PORT || 3000; 
-app.listen(port, () => {
-  console.log(`✅ Server listening on port ${port}`);
-});
+const port = process.env.PORT || 5000; 
+app.listen(port, () => console.log(`✅ Server listening on port ${port}`));

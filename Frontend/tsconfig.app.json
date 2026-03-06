@@ -24,6 +24,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "AdminDashboard/AssignTaskCard.tsx", "AdminDashboard/AddDepartmentCard.tsx", "AdminDashboard/Components/Dasdboard/CalendarCard.tsx", "AdminDashboard/Components/Dasdboard/DepartmentProgressTask.tsx", "AdminDashboard/Components/Dasdboard/PostEventCard.tsx", "AdminDashboard/UI/Textarea.tsx"]
+  "include": ["src/**/*"]
 
 }
