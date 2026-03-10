@@ -23,14 +23,24 @@ export function EventCard({
 
   const fullImageUrl = poster_url ? `http://localhost:3000${poster_url}` : null
 
-  const computeStatus = (): 'Upcoming' | 'Live' | 'Past' => {
+  function computeStatus(): 'Upcoming' | 'Live' | 'Past' {
     const now = new Date()
-    const eventDateTime = new Date(`${event_date}T${event_time}`)
-    const diffMs = eventDateTime.getTime() - now.getTime()
-    const diffHours = diffMs / (1000 * 60 * 60)
 
-    if (diffMs < 0) return 'Past'
-    if (diffHours <= 2) return 'Live'
+    // Parse the UTC date from MySQL and get local date parts
+    const eventDate = new Date(event_date)
+    const year = eventDate.getFullYear()
+    const month = String(eventDate.getMonth() + 1).padStart(2, '0')
+    const day = String(eventDate.getDate()).padStart(2, '0')
+    const datePart = `${year}-${month}-${day}`
+
+    const timePart = event_time.slice(0, 5)
+    const eventDateTime = new Date(`${datePart}T${timePart}:00`)
+
+    const diffMs = eventDateTime.getTime() - now.getTime()
+    const diffMins = diffMs / (1000 * 60)
+
+    if (diffMs < 0 && Math.abs(diffMins) > 60) return 'Past'
+    if (Math.abs(diffMins) <= 60) return 'Live'
     return 'Upcoming'
   }
 
@@ -39,7 +49,7 @@ export function EventCard({
   const statusStyles = {
     Upcoming: 'bg-[#2d5f5d]/20 text-[#4fd1c5] border-[#2d5f5d]/30',
     Live: 'bg-green-500/20 text-green-400 border-green-500/30',
-    Past: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+    Past: 'bg-red-500/20 text-red-400 border-red-500/30',
   }
 
   useEffect(() => {
@@ -91,6 +101,9 @@ export function EventCard({
       <div className="p-5 flex flex-col flex-1">
         <div className="mb-3">
           <span className={`${statusStyles[computedStatus]} border text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5`}>
+            {computedStatus === 'Live' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            )}
             {computedStatus}
           </span>
         </div>

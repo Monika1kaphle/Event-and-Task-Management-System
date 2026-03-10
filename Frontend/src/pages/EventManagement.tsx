@@ -11,12 +11,21 @@ interface EventManagementProps {
 
 function computeStatus(event_date: string, event_time: string): 'Upcoming' | 'Live' | 'Past' {
   const now = new Date()
-  const eventDateTime = new Date(`${event_date}T${event_time}`)
-  const diffMs = eventDateTime.getTime() - now.getTime()
-  const diffHours = diffMs / (1000 * 60 * 60)
 
-  if (diffMs < 0) return 'Past'
-  if (diffHours <= 2) return 'Live'
+  const eventDate = new Date(event_date)
+  const year = eventDate.getFullYear()
+  const month = String(eventDate.getMonth() + 1).padStart(2, '0')
+  const day = String(eventDate.getDate()).padStart(2, '0')
+  const datePart = `${year}-${month}-${day}`
+
+  const timePart = event_time.slice(0, 5)
+  const eventDateTime = new Date(`${datePart}T${timePart}:00`)
+
+  const diffMs = eventDateTime.getTime() - now.getTime()
+  const diffMins = diffMs / (1000 * 60)
+
+  if (diffMs < 0 && Math.abs(diffMins) > 60) return 'Past'
+  if (Math.abs(diffMins) <= 60) return 'Live'
   return 'Upcoming'
 }
 
@@ -42,18 +51,9 @@ export function EventManagement({ onLogout }: EventManagementProps) {
   )
 
   const totalEvents = filteredEvents.length
-
-  const upcomingEvents = filteredEvents.filter(e =>
-    computeStatus(e.event_date, e.event_time) === 'Upcoming'
-  ).length
-
-  const liveEvents = filteredEvents.filter(e =>
-    computeStatus(e.event_date, e.event_time) === 'Live'
-  ).length
-
-  const pastEvents = filteredEvents.filter(e =>
-    computeStatus(e.event_date, e.event_time) === 'Past'
-  ).length
+  const upcomingEvents = filteredEvents.filter(e => computeStatus(e.event_date, e.event_time) === 'Upcoming').length
+  const liveEvents = filteredEvents.filter(e => computeStatus(e.event_date, e.event_time) === 'Live').length
+  const pastEvents = filteredEvents.filter(e => computeStatus(e.event_date, e.event_time) === 'Past').length
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-white flex overflow-hidden">
@@ -83,14 +83,12 @@ export function EventManagement({ onLogout }: EventManagementProps) {
           </div>
         </header>
 
-        {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard icon={CalendarDays} count={totalEvents} label="Total Events" />
           <StatCard icon={Clock} count={upcomingEvents + liveEvents} label="Upcoming & Live" />
           <StatCard icon={Archive} count={pastEvents} label="Past Events" />
         </div>
 
-        {/* Event Grid */}
         {loading ? (
           <div className="text-center text-[#9ca3af] py-20">Loading events...</div>
         ) : filteredEvents.length === 0 ? (
