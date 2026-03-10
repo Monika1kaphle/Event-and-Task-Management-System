@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { LoginPage } from './components/auth/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { UserManagement } from './pages/UserManagement'
-import { EventManagement } from './pages/EventManagement'
+import { EventManagement } from './pages/EventManagement/EventManagement'
+import { PostEvent } from './pages/EventManagement/PostEvent'
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/users" element={<UserManagement onLogout={handleLogout} />} />
         <Route path="/events" element={<EventManagement onLogout={handleLogout} />} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="/events/create" element={<PostEvent onLogout={handleLogout} />} />
       </Routes>
     </Router>
   )

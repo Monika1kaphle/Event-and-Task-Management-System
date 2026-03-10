@@ -1,3 +1,4 @@
+import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -6,26 +7,44 @@ import {
   Calendar,
   CheckSquare,
   LogOut,
+  ChevronDown,
+  ChevronRight,
+  CalendarPlus,
+  List,
 } from 'lucide-react'
-
 interface SidebarProps {
   onLogout: () => void
 }
-
 export function Sidebar({ onLogout }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
-
+  const isEventSection = location.pathname.startsWith('/events')
+  const [eventExpanded, setEventExpanded] = useState(isEventSection)
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'User Management', icon: Users, path: '/users' },
-    { name: 'Department Management', icon: Building2, path: '/departments' },
-    { name: 'Event Management', icon: Calendar, path: '/events' },
-    { name: 'Task Management', icon: CheckSquare, path: '/tasks' },
+    {
+      name: 'Dashboard',
+      icon: LayoutDashboard,
+      path: '/dashboard',
+    },
+    {
+      name: 'User Management',
+      icon: Users,
+      path: '/users',
+    },
+    {
+      name: 'Department Management',
+      icon: Building2,
+      path: '/departments',
+    },
+    {
+      name: 'Task Management',
+      icon: CheckSquare,
+      path: '/tasks',
+    },
   ]
-
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#0f1419] border-r border-gray-800 flex flex-col z-50">
+      {/* Logo */}
       <div className="p-6 flex items-center space-x-3 border-b border-gray-800/50">
         <div className="h-8 w-8 rounded-lg bg-[#2d5f5d] flex items-center justify-center shadow-[0_0_15px_rgba(45,95,93,0.5)]">
           <Calendar className="h-5 w-5 text-white" />
@@ -33,27 +52,85 @@ export function Sidebar({ onLogout }: SidebarProps) {
         <span className="text-lg font-bold text-white tracking-tight">E&T</span>
       </div>
 
+      {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-1">
-        {menuItems.map((item) => {
+        {/* Dashboard, User Management, Department Management */}
+        {menuItems.slice(0, 3).map((item) => {
           const isActive = location.pathname === item.path
           const Icon = item.icon
           return (
             <button
               key={item.name}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]'
-                  : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'
-              }`}
+              className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'}`}
             >
-              <Icon className={`h-5 w-5 ${isActive ? 'text-[#2d5f5d]' : 'text-gray-500'}`} />
+              <Icon
+                className={`h-5 w-5 ${isActive ? 'text-[#2d5f5d]' : 'text-gray-500'}`}
+              />
+              <span>{item.name}</span>
+            </button>
+          )
+        })}
+
+        {/* Event Management — Expandable */}
+        <div>
+          <button
+            onClick={() => setEventExpanded(!eventExpanded)}
+            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isEventSection ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'}`}
+          >
+            <div className="flex items-center space-x-3">
+              <Calendar
+                className={`h-5 w-5 ${isEventSection ? 'text-[#2d5f5d]' : 'text-gray-500'}`}
+              />
+              <span>Event Management</span>
+            </div>
+            {eventExpanded ? (
+              <ChevronDown size={16} className="text-gray-500" />
+            ) : (
+              <ChevronRight size={16} className="text-gray-500" />
+            )}
+          </button>
+
+          {eventExpanded && (
+            <div className="ml-6 mt-1 space-y-0.5 border-l border-gray-800/50 pl-4">
+              <button
+                onClick={() => navigate('/events')}
+                className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${location.pathname === '/events' ? 'text-[#4fd1c5] bg-[#2d5f5d]/10' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'}`}
+              >
+                <List size={16} />
+                <span>All Events</span>
+              </button>
+              <button
+                onClick={() => navigate('/events/create')}
+                className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${location.pathname === '/events/create' ? 'text-[#4fd1c5] bg-[#2d5f5d]/10' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'}`}
+              >
+                <CalendarPlus size={16} />
+                <span>Post Event</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Task Management */}
+        {menuItems.slice(3).map((item) => {
+          const isActive = location.pathname === item.path
+          const Icon = item.icon
+          return (
+            <button
+              key={item.name}
+              onClick={() => navigate(item.path)}
+              className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'}`}
+            >
+              <Icon
+                className={`h-5 w-5 ${isActive ? 'text-[#2d5f5d]' : 'text-gray-500'}`}
+              />
               <span>{item.name}</span>
             </button>
           )
         })}
       </nav>
 
+      {/* Sign Out */}
       <div className="p-4 border-t border-gray-800/50">
         <button
           onClick={onLogout}

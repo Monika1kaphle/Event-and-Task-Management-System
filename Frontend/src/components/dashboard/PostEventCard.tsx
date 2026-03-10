@@ -13,7 +13,10 @@ export function PostEventCard() {
     title: '',
     date: '',
     time: '',
-    description: ''
+    description: '',
+    price: '',
+    location: '',
+    max_capacity: ''
   })
 
   const today = new Date().toISOString().split('T')[0]
@@ -58,6 +61,9 @@ export function PostEventCard() {
       dataToSend.append('event_date', formData.date)
       dataToSend.append('event_time', formData.time)
       dataToSend.append('description', formData.description)
+      dataToSend.append('price', formData.price)
+      dataToSend.append('location', formData.location)
+      dataToSend.append('max_capacity', formData.max_capacity)
       if (posterFile) {
         dataToSend.append('poster', posterFile)
       }
@@ -71,7 +77,7 @@ export function PostEventCard() {
 
       if (response.ok) {
         alert('Event Posted Successfully!')
-        setFormData({ title: '', date: '', time: '', description: '' })
+        setFormData({ title: '', date: '', time: '', description: '', price: '', location: '', max_capacity: '' })
         removePoster()
       } else {
         alert('Error: ' + result.error)
@@ -94,35 +100,69 @@ export function PostEventCard() {
       </div>
 
       <form onSubmit={handlePost} className="space-y-4">
+        {/* Row 1: Title, Date, Time */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input 
-            name="title" 
-            value={formData.title} 
-            onChange={handleChange} 
-            label="Event Title" 
-            placeholder="Annual Team Retreat" 
+          <Input
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            label="Event Title"
+            placeholder="Annual Team Retreat"
             required
           />
-          <Input 
-            name="date" 
-            type="date" 
-            value={formData.date} 
-            onChange={handleChange} 
-            label="Date" 
+          <Input
+            name="date"
+            type="date"
+            value={formData.date}
+            onChange={handleChange}
+            label="Date"
             min={today}
             required
           />
-          <Input 
-            name="time" 
-            type="time" 
-            value={formData.time} 
-            onChange={handleChange} 
-            label="Time" 
+          <Input
+            name="time"
+            type="time"
+            value={formData.time}
+            onChange={handleChange}
+            label="Time"
             min={minTime}
             required
           />
         </div>
 
+        {/* Row 2: Location, Price, Max Capacity */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Input
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            label="Event Location"
+            placeholder="Kathmandu, Nepal"
+            required
+          />
+          <Input
+            name="price"
+            type="number"
+            value={formData.price}
+            onChange={handleChange}
+            label="Event Price (Rs)"
+            placeholder="0 for free"
+            min="0"
+            required
+          />
+          <Input
+            name="max_capacity"
+            type="number"
+            value={formData.max_capacity}
+            onChange={handleChange}
+            label="Max Capacity"
+            placeholder="100"
+            min="1"
+            required
+          />
+        </div>
+
+        {/* Description */}
         <Textarea
           name="description"
           value={formData.description}

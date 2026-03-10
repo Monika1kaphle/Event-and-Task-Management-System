@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 
-// --- 1. Modified: Fetch only Department Heads for the dropdown ---
+// --- 1. Fetch only Department Heads for the dropdown ---
 exports.getUsers = async (req, res) => {
     try {
         const [users] = await pool.query(
@@ -13,7 +13,7 @@ exports.getUsers = async (req, res) => {
     }
 };
 
-// --- 2. Modified: Fetch departments WITH their Head Names ---
+// --- 2. Fetch departments WITH their Head Names ---
 exports.getDepartments = async (req, res) => {
     try {
         const query = `
@@ -42,18 +42,17 @@ exports.getDashboardData = async (req, res) => {
     }
 };
 
-// 4. Add Department (Handles head_id)
+// 4. Add Department
 exports.addDepartment = async (req, res) => {
-    const { name, head_id } = req.body; 
+    const { name, head_id } = req.body;
 
     if (!name) return res.status(400).json({ error: "Department name is required" });
 
     try {
         const [result] = await pool.query(
-            'INSERT INTO departments (name, head_id, created_at) VALUES (?, ?, NOW())', 
+            'INSERT INTO departments (name, head_id, created_at) VALUES (?, ?, NOW())',
             [name, head_id || null]
         );
-        
         res.status(201).json({ message: 'Department added successfully', id: result.insertId });
     } catch (err) {
         console.error("Error adding department:", err);
@@ -61,10 +60,10 @@ exports.addDepartment = async (req, res) => {
     }
 };
 
-// 4. Assign Task
+// 5. Assign Task
 exports.assignTask = async (req, res) => {
     const { title, description, department_id, assigned_to_id, deadline } = req.body;
-    
+
     if (!title || !department_id || !assigned_to_id || !deadline) {
         return res.status(400).json({ error: "Missing required fields" });
     }
@@ -81,11 +80,15 @@ exports.assignTask = async (req, res) => {
     }
 };
 
-// 5. Post Event (UPDATED TO HANDLE POSTER UPLOAD AND PAST DATE VALIDATION)
+// 6. Post Event (UPDATED WITH LOCATION, PRICE, MAX CAPACITY)
 exports.postEvent = async (req, res) => {
-    const { title, event_date, event_time, description } = req.body;
-    
-    if (!title || !event_date) return res.status(400).json({ error: "Title and Date are required" });
+    console.log('req.body:', req.body)
+
+    const { title, event_date, event_time, description, price, location, max_capacity } = req.body;
+
+    if (!title || !event_date) {
+        return res.status(400).json({ error: "Title and Date are required" });
+    }
 
     // Validate against past date/time
     const selectedDateTime = new Date(`${event_date}T${event_time || '00:00'}`);
@@ -94,14 +97,23 @@ exports.postEvent = async (req, res) => {
         return res.status(400).json({ error: "Cannot post an event in the past!" });
     }
 
-    // req.file is created by the multer middleware in your routes
     const poster_url = req.file ? `/uploads/posters/${req.file.filename}` : null;
 
     try {
-        // Updated query to include the poster_url column
         await pool.query(
-            'INSERT INTO events (title, event_date, event_time, description, poster_url) VALUES (?, ?, ?, ?, ?)',
-            [title, event_date, event_time, description || '', poster_url]
+            `INSERT INTO events 
+                (title, event_date, event_time, description, poster_url, price, location, max_capacity) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                title,
+                event_date,
+                event_time,
+                description || '',
+                poster_url,
+                price || 0,
+                location || '',
+                max_capacity || null
+            ]
         );
         res.status(201).json({ message: 'Event posted successfully' });
     } catch (err) {
@@ -110,7 +122,7 @@ exports.postEvent = async (req, res) => {
     }
 };
 
-// Add this to your controllers/adminController.js
+// 7. Get Events
 exports.getEvents = async (req, res) => {
     try {
         const [events] = await pool.query("SELECT * FROM events ORDER BY event_date DESC");

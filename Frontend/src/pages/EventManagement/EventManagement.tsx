@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { Search, Plus, CalendarDays, Clock, Archive } from 'lucide-react'
-import { Sidebar } from '../components/layout/Sidebar'
-import { Button } from '../components/ui/Button'
-import { EventCard } from '../components/events/EventCard'
+import { Sidebar } from '../../components/layout/Sidebar'
+import { Button } from '../../components/ui/Button'
+import { EventCard } from '../../components/events/EventCard'
 
 interface EventManagementProps {
   onLogout: () => void;
@@ -30,6 +31,7 @@ function computeStatus(event_date: string, event_time: string): 'Upcoming' | 'Li
 }
 
 export function EventManagement({ onLogout }: EventManagementProps) {
+  const navigate = useNavigate()
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -79,7 +81,7 @@ export function EventManagement({ onLogout }: EventManagementProps) {
                 className="bg-[#161b22] border border-[#30363d] text-white text-sm rounded-full pl-10 pr-4 py-2 w-64 focus:outline-none focus:border-[#4fd1c5] transition-colors"
               />
             </div>
-            <Button><Plus className="w-4 h-4 mr-2" />Create New Event</Button>
+            <Button onClick={() => navigate('/events/create')}><Plus className="w-4 h-4 mr-2" />Create New Event</Button>
           </div>
         </header>
 

@@ -26,18 +26,23 @@ export function EventCard({
   function computeStatus(): 'Upcoming' | 'Live' | 'Past' {
     const now = new Date()
 
-    // Parse the UTC date from MySQL and get local date parts
-    const eventDate = new Date(event_date)
-    const year = eventDate.getFullYear()
-    const month = String(eventDate.getMonth() + 1).padStart(2, '0')
-    const day = String(eventDate.getDate()).padStart(2, '0')
-    const datePart = `${year}-${month}-${day}`
+    const datePart = event_date.includes('T')
+      ? event_date.split('T')[0]
+      : event_date
 
     const timePart = event_time.slice(0, 5)
     const eventDateTime = new Date(`${datePart}T${timePart}:00`)
 
     const diffMs = eventDateTime.getTime() - now.getTime()
     const diffMins = diffMs / (1000 * 60)
+
+    console.log('--- Event:', title)
+    console.log('event_date raw:', event_date)
+    console.log('datePart:', datePart)
+    console.log('timePart:', timePart)
+    console.log('eventDateTime:', eventDateTime.toString())
+    console.log('now:', now.toString())
+    console.log('diffMins:', diffMins)
 
     if (diffMs < 0 && Math.abs(diffMins) > 60) return 'Past'
     if (Math.abs(diffMins) <= 60) return 'Live'
