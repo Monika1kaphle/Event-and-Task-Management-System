@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Search, Plus, CalendarDays, Clock, Archive, Calendar } from 'lucide-react'
+import { Search, Plus, CalendarDays, Clock, Archive } from 'lucide-react'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Button } from '../components/ui/Button'
 import { EventCard } from '../components/events/EventCard'
@@ -9,10 +9,20 @@ interface EventManagementProps {
   onLogout: () => void;
 }
 
+function computeStatus(event_date: string, event_time: string): 'Upcoming' | 'Live' | 'Past' {
+  const now = new Date()
+  const eventDateTime = new Date(`${event_date}T${event_time}`)
+  const diffMs = eventDateTime.getTime() - now.getTime()
+  const diffHours = diffMs / (1000 * 60 * 60)
+
+  if (diffMs < 0) return 'Past'
+  if (diffHours <= 2) return 'Live'
+  return 'Upcoming'
+}
+
 export function EventManagement({ onLogout }: EventManagementProps) {
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showEmpty, setShowEmpty] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
@@ -27,16 +37,23 @@ export function EventManagement({ onLogout }: EventManagementProps) {
       })
   }, [])
 
-  const filteredEvents = events.filter(event => 
+  const filteredEvents = events.filter(event =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
-  
-  const displayEvents = showEmpty ? [] : filteredEvents
-  
-  // Calculate stats for the cards
-  const totalEvents = displayEvents.length
-  const upcomingEvents = displayEvents.filter((e) => e.status === 'Upcoming' || e.status === 'Live').length
-  const pastEvents = displayEvents.filter((e) => e.status === 'Past').length
+
+  const totalEvents = filteredEvents.length
+
+  const upcomingEvents = filteredEvents.filter(e =>
+    computeStatus(e.event_date, e.event_time) === 'Upcoming'
+  ).length
+
+  const liveEvents = filteredEvents.filter(e =>
+    computeStatus(e.event_date, e.event_time) === 'Live'
+  ).length
+
+  const pastEvents = filteredEvents.filter(e =>
+    computeStatus(e.event_date, e.event_time) === 'Past'
+  ).length
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-white flex overflow-hidden">
@@ -69,27 +86,30 @@ export function EventManagement({ onLogout }: EventManagementProps) {
         {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard icon={CalendarDays} count={totalEvents} label="Total Events" />
-          <StatCard icon={Clock} count={upcomingEvents} label="Upcoming & Live" />
+          <StatCard icon={Clock} count={upcomingEvents + liveEvents} label="Upcoming & Live" />
           <StatCard icon={Archive} count={pastEvents} label="Past Events" />
         </div>
 
-        {/* Dynamic Event Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {displayEvents.map((event) => (
-            <EventCard 
-              key={event.id}
-              id={event.id}
-              title={event.title}
-              // Map database columns to the props expected by your component
-              event_date={new Date(event.event_date).toLocaleDateString()} 
-              event_time={event.event_time}
-              description={event.description}
-              status={event.status || 'Upcoming'}
-              // Ensure image path is complete
-              poster_url={event.poster_url}
-            />
-          ))}
-        </div>
+        {/* Event Grid */}
+        {loading ? (
+          <div className="text-center text-[#9ca3af] py-20">Loading events...</div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="text-center text-[#9ca3af] py-20">No events found.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                id={event.id}
+                title={event.title}
+                event_date={event.event_date}
+                event_time={event.event_time}
+                description={event.description}
+                poster_url={event.poster_url}
+              />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )

@@ -16,8 +16,23 @@ export function PostEventCard() {
     description: ''
   })
 
+  const today = new Date().toISOString().split('T')[0]
+
+  const minTime = formData.date === today
+    ? new Date().toTimeString().slice(0, 5)
+    : '00:00'
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const updated = { ...formData, [e.target.name]: e.target.value }
+
+    if (e.target.name === 'date' && e.target.value === today) {
+      const currentTime = new Date().toTimeString().slice(0, 5)
+      if (updated.time && updated.time < currentTime) {
+        updated.time = ''
+      }
+    }
+
+    setFormData(updated)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,7 +53,6 @@ export function PostEventCard() {
     setIsLoading(true)
 
     try {
-      // Use FormData to send files
       const dataToSend = new FormData()
       dataToSend.append('title', formData.title)
       dataToSend.append('event_date', formData.date)
@@ -48,10 +62,8 @@ export function PostEventCard() {
         dataToSend.append('poster', posterFile)
       }
 
-      const response = await fetch('http://localhost:3000/api/admin/post-event', {
+      const response = await fetch('http://localhost:3000/api/events/post', {
         method: 'POST',
-        // Note: Do NOT set Content-Type header when sending FormData; 
-        // the browser will set it automatically with the correct boundary.
         body: dataToSend
       })
 
@@ -97,6 +109,7 @@ export function PostEventCard() {
             value={formData.date} 
             onChange={handleChange} 
             label="Date" 
+            min={today}
             required
           />
           <Input 
@@ -105,6 +118,7 @@ export function PostEventCard() {
             value={formData.time} 
             onChange={handleChange} 
             label="Time" 
+            min={minTime}
             required
           />
         </div>

@@ -4,11 +4,10 @@ import { MoreVertical, Pencil, Trash2, CalendarDays, Clock, Calendar } from 'luc
 interface EventCardProps {
   id: number
   title: string
-  event_date: string // Updated from 'date' to match DB
-  event_time: string // Updated from 'time' to match DB
+  event_date: string
+  event_time: string
   description: string
-  status: 'Upcoming' | 'Past' | 'Live'
-  poster_url?: string | null // Updated from 'imageUrl' to match DB
+  poster_url?: string | null
 }
 
 export function EventCard({
@@ -17,14 +16,31 @@ export function EventCard({
   event_date,
   event_time,
   description,
-  status,
   poster_url,
 }: EventCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Construct full image URL
   const fullImageUrl = poster_url ? `http://localhost:3000${poster_url}` : null
+
+  const computeStatus = (): 'Upcoming' | 'Live' | 'Past' => {
+    const now = new Date()
+    const eventDateTime = new Date(`${event_date}T${event_time}`)
+    const diffMs = eventDateTime.getTime() - now.getTime()
+    const diffHours = diffMs / (1000 * 60 * 60)
+
+    if (diffMs < 0) return 'Past'
+    if (diffHours <= 2) return 'Live'
+    return 'Upcoming'
+  }
+
+  const computedStatus = computeStatus()
+
+  const statusStyles = {
+    Upcoming: 'bg-[#2d5f5d]/20 text-[#4fd1c5] border-[#2d5f5d]/30',
+    Live: 'bg-green-500/20 text-green-400 border-green-500/30',
+    Past: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -44,7 +60,7 @@ export function EventCard({
             src={fullImageUrl}
             alt={title}
             className="w-full h-full object-cover"
-            onError={(e) => (e.currentTarget.style.display = 'none')} // Hide if broken
+            onError={(e) => (e.currentTarget.style.display = 'none')}
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#161b22] to-[#0d1117] flex items-center justify-center">
@@ -74,8 +90,8 @@ export function EventCard({
 
       <div className="p-5 flex flex-col flex-1">
         <div className="mb-3">
-          <span className="bg-[#2d5f5d]/20 text-[#4fd1c5] border border-[#2d5f5d]/30 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5">
-            {status}
+          <span className={`${statusStyles[computedStatus]} border text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5`}>
+            {computedStatus}
           </span>
         </div>
 

@@ -6,6 +6,8 @@ const cors = require('cors');
 const path = require('path');
 const adminRoutes = require('./routes/admin'); 
 const eventRoutes = require('./routes/eventRoutes'); // Your new file
+const authRoutes = require('./routes/auth');
+const clientRoutes = require('./routes/clientRoutes'); // Add this line
 
 const app = express();
 
@@ -20,6 +22,8 @@ app.use('/api/admin', adminRoutes);
 // Event routes (e.g., get, post) - Mapped here
 app.use('/api/events', eventRoutes); 
 
+app.use('/api/auth', authRoutes);
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- CENTRALIZED VALIDATION ---
@@ -31,5 +35,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
-const port = process.env.PORT || 5000; 
+const port = process.env.PORT || 3000; 
 app.listen(port, () => console.log(`✅ Server listening on port ${port}`));
+
+app.use('/api/client', clientRoutes); // Add this line at the end to ensure it doesn't interfere with admin routes
