@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarPlus, ArrowLeft, Upload, X, CalendarDays, Clock, Archive } from 'lucide-react'
-import { Sidebar } from '../../components/layout/Sidebar'
-import { Input } from '../../components/ui/Input'
-import { Textarea } from '../../components/ui/Textarea'
-import { Button } from '../../components/ui/Button'
+import { Sidebar } from '../../../components/layout/Sidebar'
+import { Input } from '../../../components/ui/Input'
+import { Textarea } from '../../../components/ui/Textarea'
+import { Button } from '../../../components/ui/Button'
 import axios from 'axios'
 
 interface PostEventProps {

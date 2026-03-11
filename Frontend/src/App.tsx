@@ -2,10 +2,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useEffect, useState } from 'react'
 
 import { LoginPage } from './components/auth/LoginPage'
-import { DashboardPage } from './pages/DashboardPage'
-import { UserManagement } from './pages/UserManagement'
-import { EventManagement } from './pages/EventManagement/EventManagement'
-import { PostEvent } from './pages/EventManagement/PostEvent'
+import { DashboardPage } from './pages/Admin/Dashboard/DashboardPage'
+import { UserManagement } from './pages/Admin/UserManagement/UserManagement'
+import { EventManagement } from './pages/Admin/EventManagements.tsx/EventManagement'
+import { PostEvent } from './pages/Admin/EventManagements.tsx/PostEvent'
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)

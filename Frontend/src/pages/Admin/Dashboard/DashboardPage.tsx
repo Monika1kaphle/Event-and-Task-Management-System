@@ -1,9 +1,9 @@
-import { Sidebar } from '../components/layout/Sidebar'
-import { AddDepartmentCard } from '../components/dashboard/AddDepartmentCard'
-import { CalendarCard } from '../components/dashboard/CalendarCard'
-import { DepartmentProgressCard } from '../components/dashboard/DepartmentProgressCard'
-import { AssignTaskCard } from '../components/dashboard/AssignTaskCard'
-import { PostEventCard } from '../components/dashboard/PostEventCard'
+import { Sidebar } from '../../../components/layout/Sidebar'
+import { AddDepartmentCard } from '../../../components/dashboard/AddDepartmentCard'
+import { CalendarCard } from '../../../components/dashboard/CalendarCard'
+import { DepartmentProgressCard } from '../../../components/dashboard/DepartmentProgressCard'
+import { AssignTaskCard } from '../../../components/dashboard/AssignTaskCard'
+import { PostEventCard } from '../../../components/dashboard/PostEventCard'
 
 interface DashboardPageProps {
   onLogout: () => void

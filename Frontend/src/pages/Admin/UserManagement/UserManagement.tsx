@@ -1,5 +1,5 @@
 import  { useState } from 'react'
-import { Sidebar } from '../components/layout/Sidebar' // Import Sidebar
+import { Sidebar } from '../../../components/layout/Sidebar' // Import Sidebar
 import {
   Search,
   Bell,

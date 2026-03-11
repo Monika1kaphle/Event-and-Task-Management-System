@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { Search, Plus, CalendarDays, Clock, Archive } from 'lucide-react'
-import { Sidebar } from '../../components/layout/Sidebar'
-import { Button } from '../../components/ui/Button'
-import { EventCard } from '../../components/events/EventCard'
+import { Sidebar } from '../../../components/layout/Sidebar'
+import { Button } from '../../../components/ui/Button'
+import { EventCard } from '../../../components/events/EventCard'
 
 interface EventManagementProps {
   onLogout: () => void;
