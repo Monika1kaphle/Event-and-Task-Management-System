@@ -25,6 +25,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/auth', authRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/client', clientRoutes);
 
 // --- CENTRALIZED VALIDATION ---
 app.post('/api/admin/validate-event-date', (req, res) => { /* ... your logic ... */ });
@@ -37,5 +38,3 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 3000; 
 app.listen(port, () => console.log(`✅ Server listening on port ${port}`));
-
-app.use('/api/client', clientRoutes); // Add this line at the end to ensure it doesn't interfere with admin routes

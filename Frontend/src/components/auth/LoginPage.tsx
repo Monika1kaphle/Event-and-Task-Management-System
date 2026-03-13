@@ -3,7 +3,7 @@ import { LoginForm } from './LoginForm'
 import { Calendar, CheckSquare } from 'lucide-react'
 
 type LoginPageProps = {
-  onLoginSuccess: () => void
+  onLoginSuccess: (userData: any) => void
 }
 
 export function LoginPage({ onLoginSuccess }: LoginPageProps) {
