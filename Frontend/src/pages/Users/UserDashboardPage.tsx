@@ -3,7 +3,6 @@ import { UserSidebar } from '../../components/layout/UserSidebar'
 import { BookingStatusCards } from '../User/UserDashboard/BookingStatusCard'
 import { UpcomingBookingsCard } from '../User/UserDashboard/UpcomingBookingsCard'
 import { RecentInvitationsCard } from '../User/UserDashboard/RecentInvitation'
-import { UserCalendarCard } from '../User/UserDashboard/UserCalendarCard'
 import { Bell, Search, Settings } from 'lucide-react'
 
 interface UserDashboardPageProps {
@@ -26,7 +25,6 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
         const token = localStorage.getItem('token')
         const headers = { Authorization: `Bearer ${token}` }
 
-        // Get user info from localStorage
         const savedUser = JSON.parse(localStorage.getItem('user') || '{}')
         if (savedUser.name) {
           setUserName(savedUser.name)
@@ -38,13 +36,10 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
           setUserInitials(initials.toUpperCase())
         }
 
-        // Fetch booking stats
         const statsRes = await fetch(
           'http://localhost:3000/api/client/dashboard-stats',
           { headers }
         )
-
-        // Fetch all events to count upcoming
         const eventsRes = await fetch(
           'http://localhost:3000/api/client/events',
           { headers }
@@ -52,7 +47,6 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
 
         if (statsRes.ok) {
           const statsData = await statsRes.json()
-
           let upcomingCount = 0
           if (eventsRes.ok) {
             const eventsData = await eventsRes.json()
@@ -60,7 +54,6 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
               (e: any) => new Date(e.event_date) >= new Date()
             ).length
           }
-
           setStats({
             activeBookings: statsData.activeBookings || 0,
             attendedEvents: statsData.attendedEvents || 0,
@@ -71,7 +64,6 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
         console.error('Failed to fetch dashboard data', error)
       }
     }
-
     fetchDashboardData()
   }, [])
 
@@ -88,15 +80,13 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
         onLogout={onLogout}
       />
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT — page itself scrolls */}
       <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen custom-scrollbar">
         {/* Header */}
         <header className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">My Dashboard</h1>
-            <p className="text-gray-400 text-sm mt-1">
-              Welcome back, {userName}
-            </p>
+            <p className="text-gray-400 text-sm mt-1">Welcome back, {userName}</p>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -115,7 +105,6 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
             <button className="p-2 rounded-full bg-[#161b22] border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 transition-all">
               <Settings className="h-5 w-5" />
             </button>
-            {/* Avatar with real initials */}
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border-2 border-[#161b22] shadow-lg flex items-center justify-center text-sm font-bold">
               {userInitials}
             </div>
@@ -131,15 +120,10 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
             upcomingCount={stats.upcomingCount}
           />
 
-          {/* Middle Section: Upcoming Bookings & Calendar */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-[400px]">
-            <div className="lg:col-span-2 h-full">
-              <UpcomingBookingsCard onEventClick={handleNavigateToBookings} />
-            </div>
-            <div className="lg:col-span-1 h-full">
-              <UserCalendarCard />
-            </div>
-          </div>
+          {/* Middle Row: Events Card + Calendar — fixed height, events scroll inside */}
+          <div style={{ height: '420px' }} className="min-h-0">
+  <UpcomingBookingsCard onEventClick={handleNavigateToBookings} />
+</div>
 
           {/* Bottom Section: Recent Invitations */}
           <div className="w-full pb-8">

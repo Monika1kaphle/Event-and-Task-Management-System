@@ -7,20 +7,19 @@ import { UserManagement } from './pages/Admin/UserManagement/UserManagement'
 import { EventManagement } from './pages/Admin/EventManagements.tsx/EventManagement'
 import { PostEvent } from './pages/Admin/EventManagements.tsx/PostEvent'
 import { UserDashboardPage } from './pages/Users/UserDashboardPage'
+import { PaymentSuccess } from './pages/User/MyBookings/PaymentSuccess'
 
 export default function App() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Only restore session if BOTH token and user exist
     const savedUser = localStorage.getItem('user')
     const token = localStorage.getItem('token')
     if (savedUser && token) {
       try {
         setUser(JSON.parse(savedUser))
       } catch {
-        // Corrupted data — clear it
         localStorage.removeItem('user')
         localStorage.removeItem('token')
       }
@@ -30,7 +29,6 @@ export default function App() {
 
   const handleLoginSuccess = (userData: any) => {
     setUser(userData)
-    // userData already saved to localStorage inside LoginForm
   }
 
   const handleLogout = () => {
@@ -41,16 +39,14 @@ export default function App() {
 
   if (loading) return null
 
-  // Helper guards
   const isAdmin = user?.role === 'ADMIN'
-  const isClient = user?.role === 'CLIENT'
   const isLoggedIn = !!user
 
   return (
     <Router>
       <Routes>
 
-        {/* LOGIN — redirect away if already logged in */}
+        {/* LOGIN */}
         <Route
           path="/login"
           element={
@@ -64,7 +60,7 @@ export default function App() {
           }
         />
 
-        {/* ONBOARDING — only for Pending OTP users */}
+        {/* ONBOARDING */}
         <Route
           path="/setup-password"
           element={
@@ -76,7 +72,7 @@ export default function App() {
           }
         />
 
-        {/* ROOT — smart redirect based on role */}
+        {/* ROOT */}
         <Route
           path="/"
           element={
@@ -105,7 +101,7 @@ export default function App() {
           element={isAdmin ? <PostEvent onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
 
-        {/* CLIENT/USER ROUTE */}
+        {/* CLIENT ROUTE */}
         <Route
           path="/user-dashboard"
           element={
@@ -115,7 +111,17 @@ export default function App() {
           }
         />
 
-        {/* FALLBACK */}
+        {/* ✅ PAYMENT ROUTES — must be BEFORE the * fallback */}
+        <Route
+          path="/payment/success"
+          element={<PaymentSuccess />}
+        />
+        <Route
+          path="/payment/failure"
+          element={<Navigate to="/user-dashboard" replace />}
+        />
+
+        {/* FALLBACK — must always be LAST */}
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>

@@ -1,17 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { loginRequired } = require('../middleware/auth');
-const Booking = require('../models/booking'); // Import the model
-const db = require('../config/db'); // DB pool for raw queries
+const Booking = require('../models/booking');
+const db = require('../config/db');
 
 // 1. Get current user's dashboard data
 router.get('/dashboard', loginRequired, async (req, res) => {
     try {
         const myEvents = await Booking.getUserBookings(req.user.id);
-        res.json({ 
-            user: req.user, 
-            myEvents: myEvents 
-        });
+        res.json({ user: req.user, myEvents: myEvents });
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch dashboard data' });
     }
@@ -21,7 +18,6 @@ router.get('/dashboard', loginRequired, async (req, res) => {
 router.post('/book-event', loginRequired, async (req, res) => {
     const { eventId } = req.body;
     if (!eventId) return res.status(400).json({ error: 'Event ID required' });
-
     try {
         await Booking.createBooking(req.user.id, eventId);
         res.json({ message: "Booking successful!" });
@@ -30,7 +26,7 @@ router.post('/book-event', loginRequired, async (req, res) => {
     }
 });
 
-// 3. Dashboard stats for current user
+// 3. Dashboard stats
 router.get('/dashboard-stats', loginRequired, async (req, res) => {
     const userId = req.user.id;
     try {
@@ -40,7 +36,6 @@ router.get('/dashboard-stats', loginRequired, async (req, res) => {
               (SELECT COUNT(*) FROM bookings WHERE user_id = ? AND booking_date < NOW()) AS attendedEvents`,
             [userId, userId]
         );
-
         res.json(rows[0] || { activeBookings: 0, attendedEvents: 0 });
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
@@ -48,8 +43,7 @@ router.get('/dashboard-stats', loginRequired, async (req, res) => {
     }
 });
 
-module.exports = router;
-// 4. Get all upcoming events (for client to browse & book)
+// 4. Get all events
 router.get('/events', loginRequired, async (req, res) => {
     try {
         const [events] = await db.query(
@@ -66,3 +60,6 @@ router.get('/events', loginRequired, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch events' });
     }
 });
+
+// ✅ module.exports must always be the LAST line
+module.exports = router;

@@ -5,30 +5,25 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const adminRoutes = require('./routes/admin'); 
-const eventRoutes = require('./routes/eventRoutes'); // Your new file
+const eventRoutes = require('./routes/eventRoutes');
 const authRoutes = require('./routes/auth');
-const clientRoutes = require('./routes/clientRoutes'); // Add this line
-
+const clientRoutes = require('./routes/clientRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const app = express();
 
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- ROUTES ---
-// Admin routes (e.g., users, departments)
-app.use('/api/admin', adminRoutes); 
-
-// Event routes (e.g., get, post) - Mapped here
-app.use('/api/events', eventRoutes); 
-
-app.use('/api/auth', authRoutes);
-
+// Static files — must be before routes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/client', clientRoutes);
 
-// --- CENTRALIZED VALIDATION ---
-app.post('/api/admin/validate-event-date', (req, res) => { /* ... your logic ... */ });
+// Routes
+app.use('/api/admin', adminRoutes); 
+app.use('/api/events', eventRoutes); 
+app.use('/api/auth', authRoutes);
+app.use('/api/client', clientRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Error Handling
 app.use((err, req, res, next) => {
