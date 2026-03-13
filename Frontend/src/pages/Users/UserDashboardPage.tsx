@@ -3,6 +3,7 @@ import { UserSidebar } from '../../components/layout/UserSidebar'
 import { BookingStatusCards } from '../User/UserDashboard/BookingStatusCard'
 import { UpcomingBookingsCard } from '../User/UserDashboard/UpcomingBookingsCard'
 import { RecentInvitationsCard } from '../User/UserDashboard/RecentInvitation'
+import { MyBookingsPage } from '../User/MyBookings/Mybookingspage'
 import { Bell, Search, Settings } from 'lucide-react'
 
 interface UserDashboardPageProps {
@@ -71,6 +72,18 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
     setActiveItem('My Bookings')
   }
 
+  // Page title based on active sidebar item
+  const getPageTitle = () => {
+    switch (activeItem) {
+      case 'My Bookings': return { title: 'My Bookings', subtitle: 'Your booked events and transactions' }
+      case 'Event Invitations': return { title: 'Event Invitations', subtitle: 'Events you have been invited to' }
+      case 'User Settings': return { title: 'Settings', subtitle: 'Manage your account preferences' }
+      default: return { title: 'My Dashboard', subtitle: `Welcome back, ${userName}` }
+    }
+  }
+
+  const { title, subtitle } = getPageTitle()
+
   return (
     <div className="min-h-screen bg-[#0f1419] text-white flex relative">
       {/* SIDEBAR */}
@@ -80,13 +93,14 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
         onLogout={onLogout}
       />
 
-      {/* MAIN CONTENT — page itself scrolls */}
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen custom-scrollbar">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-8">
+      {/* MAIN CONTENT */}
+      <main className="flex-1 ml-64 overflow-y-auto h-screen custom-scrollbar">
+
+        {/* Sticky Header */}
+        <header className="sticky top-0 z-10 bg-[#0f1419]/95 backdrop-blur-sm border-b border-gray-800/50 px-8 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">My Dashboard</h1>
-            <p className="text-gray-400 text-sm mt-1">Welcome back, {userName}</p>
+            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+            <p className="text-gray-400 text-sm mt-0.5">{subtitle}</p>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -105,31 +119,54 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
             <button className="p-2 rounded-full bg-[#161b22] border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 transition-all">
               <Settings className="h-5 w-5" />
             </button>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border-2 border-[#161b22] shadow-lg flex items-center justify-center text-sm font-bold">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border-2 border-[#161b22] shadow-lg flex items-center justify-center text-sm font-bold cursor-pointer">
               {userInitials}
             </div>
           </div>
         </header>
 
-        {/* Dashboard Grid */}
-        <div className="space-y-6">
-          {/* Top Row: Status Cards */}
-          <BookingStatusCards
-            activeCount={stats.activeBookings}
-            attendedCount={stats.attendedEvents}
-            upcomingCount={stats.upcomingCount}
-          />
+        {/* PAGE CONTENT — switches based on sidebar */}
+        {activeItem === 'My Bookings' ? (
+          // ── My Bookings Page ──
+          <MyBookingsPage />
 
-          {/* Middle Row: Events Card + Calendar — fixed height, events scroll inside */}
-          <div style={{ height: '420px' }} className="min-h-0">
-  <UpcomingBookingsCard onEventClick={handleNavigateToBookings} />
-</div>
-
-          {/* Bottom Section: Recent Invitations */}
-          <div className="w-full pb-8">
-            <RecentInvitationsCard onBookEvent={handleNavigateToBookings} />
+        ) : activeItem === 'Event Invitations' ? (
+          // ── Event Invitations (placeholder) ──
+          <div className="p-8 flex flex-col items-center justify-center py-32 text-gray-500 space-y-3">
+            <Bell className="h-16 w-16 text-gray-700" />
+            <p className="text-lg font-medium text-gray-400">Event Invitations</p>
+            <p className="text-sm">Coming soon...</p>
           </div>
-        </div>
+
+        ) : activeItem === 'User Settings' ? (
+          // ── User Settings (placeholder) ──
+          <div className="p-8 flex flex-col items-center justify-center py-32 text-gray-500 space-y-3">
+            <Settings className="h-16 w-16 text-gray-700" />
+            <p className="text-lg font-medium text-gray-400">User Settings</p>
+            <p className="text-sm">Coming soon...</p>
+          </div>
+
+        ) : (
+          // ── Home Dashboard ──
+          <div className="p-8 space-y-6">
+            {/* Top Row: Status Cards */}
+            <BookingStatusCards
+              activeCount={stats.activeBookings}
+              attendedCount={stats.attendedEvents}
+              upcomingCount={stats.upcomingCount}
+            />
+
+            {/* Events Card — fixed height, scrolls inside */}
+            <div style={{ height: '420px' }} className="min-h-0">
+              <UpcomingBookingsCard onEventClick={handleNavigateToBookings} />
+            </div>
+
+            {/* Recent Invitations */}
+            <div className="w-full pb-8">
+              <RecentInvitationsCard onBookEvent={handleNavigateToBookings} />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

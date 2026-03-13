@@ -61,5 +61,36 @@ router.get('/events', loginRequired, async (req, res) => {
     }
 });
 
+// 5. Get user's own bookings with event details
+router.get('/my-bookings', loginRequired, async (req, res) => {
+    try {
+        const [bookings] = await db.query(
+            `SELECT 
+                b.id AS booking_id,
+                b.booking_date,
+                e.id AS event_id,
+                e.title,
+                e.event_date,
+                e.event_time,
+                e.location,
+                e.max_capacity,
+                e.price,
+                e.poster_url,
+                e.status,
+                e.description
+             FROM bookings b
+             JOIN events e ON e.id = b.event_id
+             WHERE b.user_id = ?
+             ORDER BY b.booking_date DESC`,
+            [req.user.id]
+        )
+        res.json(bookings)
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: 'Failed to fetch bookings' })
+    }
+})
+
 // ✅ module.exports must always be the LAST line
 module.exports = router;
+
