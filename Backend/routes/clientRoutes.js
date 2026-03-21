@@ -89,8 +89,53 @@ router.get('/my-bookings', loginRequired, async (req, res) => {
         console.error(err)
         res.status(500).json({ error: 'Failed to fetch bookings' })
     }
-})
+});
 
-// ✅ module.exports must always be the LAST line
+router.put('/streak', loginRequired, async (req, res) => {
+    try {
+        const userId = req.user.id
+        const [[user]] = await db.query(
+            'SELECT streak_count, last_login_date FROM users WHERE id = ?',
+            [userId]
+        )
+
+        const today = new Date().toISOString().split('T')[0]
+        const last = user.last_login_date
+            ? new Date(user.last_login_date).toISOString().split('T')[0]
+            : null
+
+        // ✅ Already updated today — return immediately, no DB write
+        if (last === today) {
+            return res.json({ streak: user.streak_count, alreadyUpdated: true })
+        }
+
+        const yesterday = new Date()
+        yesterday.setDate(yesterday.getDate() - 1)
+        const yStr = yesterday.toISOString().split('T')[0]
+
+        const newStreak = last === yStr ? (user.streak_count || 0) + 1 : 1
+
+        // ✅ Only update if last_login_date is still NOT today (race condition guard)
+        const [updateResult] = await db.query(
+            `UPDATE users 
+             SET streak_count = ?, last_login_date = ?
+             WHERE id = ? AND (last_login_date != ? OR last_login_date IS NULL)`,
+            [newStreak, today, userId, today]
+        )
+
+        // If affectedRows is 0, another request already updated it today
+        if (updateResult.affectedRows === 0) {
+            const [[fresh]] = await db.query(
+                'SELECT streak_count FROM users WHERE id = ?', [userId]
+            )
+            return res.json({ streak: fresh.streak_count, alreadyUpdated: true })
+        }
+
+        res.json({ streak: newStreak, alreadyUpdated: false })
+    } catch (err) {
+        console.error('Streak error:', err)
+        res.status(500).json({ error: err.message })
+    }
+});
+
 module.exports = router;
-

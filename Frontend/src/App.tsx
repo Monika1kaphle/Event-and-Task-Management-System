@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { LoginPage } from './components/auth/LoginPage'
 import { DashboardPage } from './pages/Admin/Dashboard/DashboardPage'
 import { UserManagement } from './pages/Admin/UserManagement/UserManagement'
-import { EventManagement } from './pages/Admin/EventManagements.tsx/EventManagement'
-import { PostEvent } from './pages/Admin/EventManagements.tsx/PostEvent'
+import { EventManagement } from './pages/Admin/EventManagements/EventManagement'
+import { PostEvent } from './pages/Admin/EventManagements/PostEvent'
 import { UserDashboardPage } from './pages/Users/UserDashboardPage'
 import { PaymentSuccess } from './pages/User/MyBookings/PaymentSuccess'
+import { DepartmentManagement } from './pages/Admin/DepartmentManagement/DepartmentManagement'
+import { SetPasswordPage } from './components/auth/SetPasswordPages'
 
 export default function App() {
   const [user, setUser] = useState<any>(null)
@@ -39,14 +41,16 @@ export default function App() {
 
   if (loading) return null
 
-  const isAdmin = user?.role === 'ADMIN'
+  const isAdmin    = user?.role === 'ADMIN'
+  const isDeptHead = user?.role === 'DEPT_HEAD'
+  const isMember   = user?.role === 'MEMBER'
   const isLoggedIn = !!user
 
   return (
     <Router>
       <Routes>
 
-        {/* LOGIN */}
+        {/* ── LOGIN ── */}
         <Route
           path="/login"
           element={
@@ -54,36 +58,48 @@ export default function App() {
               <LoginPage onLoginSuccess={handleLoginSuccess} />
             ) : isAdmin ? (
               <Navigate to="/dashboard" replace />
+            ) : isDeptHead ? (
+              <Navigate to="/dept-dashboard" replace />
+            ) : isMember ? (
+              <Navigate to="/member-dashboard" replace />
             ) : (
               <Navigate to="/user-dashboard" replace />
             )
           }
         />
 
-        {/* ONBOARDING */}
+        {/* ── SET PASSWORD (dept head / member first login after OTP) ── */}
+        <Route
+          path="/set-password"
+          element={<SetPasswordPage onLoginSuccess={handleLoginSuccess} />}
+        />
+
+        {/* ── LEGACY ONBOARDING (keep for backwards compat) ── */}
         <Route
           path="/setup-password"
           element={
             user?.status === 'Pending OTP' ? (
-              <div className="text-white p-10">Password Setup Page Coming Soon...</div>
+              <Navigate to="/set-password" replace />
             ) : (
               <Navigate to="/" replace />
             )
           }
         />
 
-        {/* ROOT */}
+        {/* ── ROOT REDIRECT ── */}
         <Route
           path="/"
           element={
-            !isLoggedIn ? <Navigate to="/login" replace /> :
-            user.status === 'Pending OTP' ? <Navigate to="/setup-password" replace /> :
-            isAdmin ? <Navigate to="/dashboard" replace /> :
-            <Navigate to="/user-dashboard" replace />
+            !isLoggedIn                     ? <Navigate to="/login"            replace /> :
+            user.status === 'Pending OTP'   ? <Navigate to="/set-password"     replace /> :
+            isAdmin                         ? <Navigate to="/dashboard"         replace /> :
+            isDeptHead                      ? <Navigate to="/dept-dashboard"    replace /> :
+            isMember                        ? <Navigate to="/member-dashboard"  replace /> :
+                                              <Navigate to="/user-dashboard"    replace />
           }
         />
 
-        {/* ADMIN ROUTES */}
+        {/* ── ADMIN ROUTES ── */}
         <Route
           path="/dashboard"
           element={isAdmin ? <DashboardPage onLogout={handleLogout} /> : <Navigate to="/login" replace />}
@@ -91,6 +107,10 @@ export default function App() {
         <Route
           path="/users"
           element={isAdmin ? <UserManagement onLogout={handleLogout} /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/departments"
+          element={isAdmin ? <DepartmentManagement onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
         <Route
           path="/events"
@@ -101,27 +121,45 @@ export default function App() {
           element={isAdmin ? <PostEvent onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
 
-        {/* CLIENT ROUTE */}
+        {/* ── DEPT HEAD ROUTE (placeholder until you build the page) ── */}
+        <Route
+          path="/dept-dashboard"
+          element={
+            !isLoggedIn   ? <Navigate to="/login" replace /> :
+            !isDeptHead   ? <Navigate to="/" replace /> :
+            <div className="min-h-screen bg-[#0d1117] text-white flex items-center justify-center">
+              <p className="text-xl font-semibold text-[#4fd1c5]">Department Head Dashboard — Coming Soon</p>
+            </div>
+          }
+        />
+
+        {/* ── MEMBER ROUTE (placeholder until you build the page) ── */}
+        <Route
+          path="/member-dashboard"
+          element={
+            !isLoggedIn ? <Navigate to="/login" replace /> :
+            !isMember   ? <Navigate to="/" replace /> :
+            <div className="min-h-screen bg-[#0d1117] text-white flex items-center justify-center">
+              <p className="text-xl font-semibold text-[#4fd1c5]">Member Dashboard — Coming Soon</p>
+            </div>
+          }
+        />
+
+        {/* ── CLIENT ROUTE ── */}
         <Route
           path="/user-dashboard"
           element={
-            !isLoggedIn ? <Navigate to="/login" replace /> :
-            isAdmin ? <Navigate to="/dashboard" replace /> :
+            !isLoggedIn ? <Navigate to="/login"    replace /> :
+            isAdmin     ? <Navigate to="/dashboard" replace /> :
             <UserDashboardPage onLogout={handleLogout} />
           }
         />
 
-        {/* ✅ PAYMENT ROUTES — must be BEFORE the * fallback */}
-        <Route
-          path="/payment/success"
-          element={<PaymentSuccess />}
-        />
-        <Route
-          path="/payment/failure"
-          element={<Navigate to="/user-dashboard" replace />}
-        />
+        {/* ── PAYMENT ROUTES ── */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/failure" element={<Navigate to="/user-dashboard" replace />} />
 
-        {/* FALLBACK — must always be LAST */}
+        {/* ── FALLBACK — always last ── */}
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>

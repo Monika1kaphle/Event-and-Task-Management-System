@@ -1,18 +1,11 @@
 const pool = require('../config/db');
 
-// --- DATABASE FUNCTIONS ---
-
-async function createUser({ name, email, password, role = 'CLIENT', status = 'active' }) {
-  const conn = await pool.getConnection();
-  try {
-    const [result] = await conn.query(
-      'INSERT INTO users (name, email, password, role, status) VALUES (?, ?, ?, ?, ?)',
-      [name, email, password, role, status]
-    );
-    return { id: result.insertId, name, email, role, status };
-  } finally {
-    conn.release();
-  }
+async function createUser({ name, email, password, role = 'CLIENT', status = 'active', department_id = null, role_title = null }) {
+  const [result] = await pool.query(
+    'INSERT INTO users (name, email, password, role, status, department_id, role_title) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [name, email, password || null, role, status, department_id, role_title]
+  );
+  return { id: result.insertId, name, email, role, status };
 }
 
 async function findByEmail(email) {
@@ -21,28 +14,33 @@ async function findByEmail(email) {
 }
 
 async function findById(id) {
-  const [rows] = await pool.query('SELECT id, name, email, role, status, created_at FROM users WHERE id = ?', [id]);
+  const [rows] = await pool.query(
+    'SELECT id, name, email, role, status, department_id, role_title, created_at FROM users WHERE id = ?',
+    [id]
+  );
   return rows[0];
 }
 
 async function getAllUsers() {
-  const [rows] = await pool.query('SELECT id, name, email, role, status, created_at FROM users');
+  const [rows] = await pool.query(
+    'SELECT id, name, email, role, status, department_id, role_title, created_at FROM users'
+  );
   return rows;
 }
 
-async function updateUser(id, { name, email, password, role, status }) {
-  const fields = [];
+async function updateUser(id, fields) {
+  const allowed = ['name', 'email', 'password', 'role', 'status', 'department_id', 'role_title'];
+  const setClauses = [];
   const values = [];
-  if (name) { fields.push('name = ?'); values.push(name); }
-  if (email) { fields.push('email = ?'); values.push(email); }
-  if (password) { fields.push('password = ?'); values.push(password); }
-  if (role) { fields.push('role = ?'); values.push(role); }
-  if (status) { fields.push('status = ?'); values.push(status); }
-  if (fields.length === 0) return findById(id);
-
+  for (const key of allowed) {
+    if (fields[key] !== undefined) {
+      setClauses.push(`${key} = ?`);
+      values.push(fields[key]);
+    }
+  }
+  if (setClauses.length === 0) return findById(id);
   values.push(id);
-  const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
-  await pool.query(sql, values);
+  await pool.query(`UPDATE users SET ${setClauses.join(', ')} WHERE id = ?`, values);
   return findById(id);
 }
 
@@ -62,13 +60,8 @@ async function incrementLoginAttempts(id) {
 }
 
 async function resetLoginAttempts(id) {
-  await pool.query(
-    'UPDATE users SET login_attempts = 0, lock_until = NULL WHERE id = ?',
-    [id]
-  );
+  await pool.query('UPDATE users SET login_attempts = 0, lock_until = NULL WHERE id = ?', [id]);
 }
-
-// --- OTP FUNCTIONS ---
 
 async function saveOTP(email, otpCode) {
   await pool.query('DELETE FROM otps WHERE email = ?', [email]);
@@ -92,14 +85,7 @@ async function verifyOTP(email, otpCode) {
 }
 
 module.exports = {
-  createUser,
-  findByEmail,
-  findById,
-  getAllUsers,
-  updateUser,
-  deactivateUser,
-  incrementLoginAttempts,
-  resetLoginAttempts,
-  saveOTP,
-  verifyOTP
+  createUser, findByEmail, findById, getAllUsers,
+  updateUser, deactivateUser, incrementLoginAttempts,
+  resetLoginAttempts, saveOTP, verifyOTP
 };
