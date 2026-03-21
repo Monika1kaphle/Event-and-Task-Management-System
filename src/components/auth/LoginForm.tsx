@@ -3,8 +3,9 @@ import { ArrowRight } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 
+// 1. Updated Type to accept the user object upon success
 type LoginFormProps = {
-  onLoginSuccess: () => void
+  onLoginSuccess: (user: any) => void
 }
 
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
@@ -90,11 +91,13 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         const data = await response.json()
 
         if (response.ok) {
+          // Store authentication data
           localStorage.setItem('token', data.token)
           localStorage.setItem('user', JSON.stringify(data.user))
 
-          // ✅ THIS IS THE KEY LINE
-          onLoginSuccess()
+          // ✅ Pass the user object (containing role/status) to the parent
+          // This allows the parent to check if status === 'Pending OTP'
+          onLoginSuccess(data.user)
         } else {
           setErrors((prev) => ({ ...prev, otp: data.error || 'Invalid OTP' }))
         }

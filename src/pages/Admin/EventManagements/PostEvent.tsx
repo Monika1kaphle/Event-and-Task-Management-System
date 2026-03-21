@@ -49,6 +49,11 @@ export function PostEvent({ onLogout }: PostEventProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [events, setEvents] = useState<any[]>([])
 
+  // ✅ Popup state
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+  const [createdEventId, setCreatedEventId] = useState<number | null>(null)
+  const [createdEventTitle, setCreatedEventTitle] = useState('')
+
   const today = new Date().toISOString().split('T')[0]
 
   const [formData, setFormData] = useState({
@@ -126,11 +131,13 @@ export function PostEvent({ onLogout }: PostEventProps) {
       const data = await response.json()
 
       if (response.ok) {
-        alert('Event Posted Successfully!')
+        // ✅ Store event info and show popup — NO alert(), NO navigate() here
+        setCreatedEventId(data.id)
+        setCreatedEventTitle(formData.title)
         setFormData({ title: '', date: '', time: '', description: '', price: '', location: '', max_capacity: '' })
         setPosterPreview(null)
         setPosterFile(null)
-        navigate('/events')
+        setShowSuccessPopup(true)
       } else {
         alert('Error: ' + data.error)
       }
@@ -168,7 +175,7 @@ export function PostEvent({ onLogout }: PostEventProps) {
         </div>
 
         {/* Form Card */}
-        <div className="bg-[#161b22]/80 backdrop-blur-sm border border-gray-800 rounded-xl p-8 ">
+        <div className="bg-[#161b22]/80 backdrop-blur-sm border border-gray-800 rounded-xl p-8">
           <div className="flex items-center space-x-3 mb-8">
             <div className="p-2.5 rounded-lg bg-[#2d5f5d]/20 text-[#4fd1c5]">
               <CalendarPlus className="h-5 w-5" />
@@ -177,130 +184,88 @@ export function PostEvent({ onLogout }: PostEventProps) {
           </div>
 
           <form onSubmit={handlePost} className="space-y-6">
-            {/* Row 1: Title, Date, Time */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <Input
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                label="Event Title"
-                placeholder="Annual Team Retreat"
-                required
-              />
-              <Input
-                name="date"
-                type="date"
-                value={formData.date}
-                onChange={handleChange}
-                label="Date"
-                min={today}
-                required
-              />
-              <Input
-                name="time"
-                type="time"
-                value={formData.time}
-                onChange={handleChange}
-                label="Time"
-                min={minTime}
-                required
-              />
+              <Input name="title" value={formData.title} onChange={handleChange} label="Event Title" placeholder="Annual Team Retreat" required />
+              <Input name="date" type="date" value={formData.date} onChange={handleChange} label="Date" min={today} required />
+              <Input name="time" type="time" value={formData.time} onChange={handleChange} label="Time" min={minTime} required />
             </div>
 
-            {/* Row 2: Location, Price, Max Capacity */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <Input
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                label="Event Location"
-                placeholder="Kathmandu, Nepal"
-                required
-              />
-              <Input
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleChange}
-                label="Event Price (Rs)"
-                placeholder="0 for free"
-                min="0"
-                required
-              />
-              <Input
-                name="max_capacity"
-                type="number"
-                value={formData.max_capacity}
-                onChange={handleChange}
-                label="Max Capacity"
-                placeholder="100"
-                min="1"
-                required
-              />
+              <Input name="location" value={formData.location} onChange={handleChange} label="Event Location" placeholder="Kathmandu, Nepal" required />
+              <Input name="price" type="number" value={formData.price} onChange={handleChange} label="Event Price (Rs)" placeholder="0 for free" min="0" required />
+              <Input name="max_capacity" type="number" value={formData.max_capacity} onChange={handleChange} label="Max Capacity" placeholder="100" min="1" required />
             </div>
 
-            {/* Description */}
-            <Textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              label="Description"
-              placeholder="Enter event details, location, and agenda..."
-              rows={4}
-              required
-            />
+            <Textarea name="description" value={formData.description} onChange={handleChange} label="Description" placeholder="Enter event details, location, and agenda..." rows={4} required />
 
-            {/* Event Poster Upload */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Event Poster
-              </label>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Event Poster</label>
               {posterPreview ? (
                 <div className="relative rounded-xl overflow-hidden border border-gray-800 bg-[#0d1117]">
-                  <img
-                    src={posterPreview}
-                    alt="Event poster preview"
-                    className="w-full h-56 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={removePoster}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-colors"
-                  >
+                  <img src={posterPreview} alt="Event poster preview" className="w-full h-56 object-cover" />
+                  <button type="button" onClick={removePoster} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-colors">
                     <X size={16} />
                   </button>
                 </div>
               ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-800 rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer hover:border-[#2d5f5d]/50 transition-colors bg-[#0d1117]/50"
-                >
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-gray-800 rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer hover:border-[#2d5f5d]/50 transition-colors bg-[#0d1117]/50">
                   <Upload className="w-8 h-8 text-gray-600 mb-3" />
                   <p className="text-sm text-gray-400">Click to upload poster (JPG, PNG)</p>
                 </div>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png" onChange={handleFileChange} className="hidden" />
             </div>
 
-            {/* Submit */}
             <div className="flex justify-end pt-2">
-              <Button
-                type="submit"
-                isLoading={isLoading}
-                className="min-w-[160px]"
-              >
-                Post Event
-              </Button>
+              <Button type="submit" isLoading={isLoading} className="min-w-[160px]">Post Event</Button>
             </div>
           </form>
         </div>
       </div>
+
+      {/* ✅ Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 w-full max-w-md shadow-2xl text-center mx-4">
+
+            {/* Check icon */}
+            <div className="w-16 h-16 rounded-full bg-[#2d5f5d]/20 flex items-center justify-center mx-auto mb-5">
+              <svg className="w-8 h-8 text-[#4fd1c5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <h2 className="text-xl font-bold text-white mb-2">Event Created Successfully!</h2>
+            <p className="text-sm text-[#9ca3af] mb-1">
+              <span className="text-[#4fd1c5] font-medium">"{createdEventTitle}"</span> has been posted.
+            </p>
+            <p className="text-sm text-[#9ca3af] mb-7">
+              Would you like to set up an event management team by creating departments for this event?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSuccessPopup(false)
+                  navigate('/events')
+                }}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-[#30363d] text-sm text-[#9ca3af] hover:text-white hover:border-[#4fd1c5]/40 transition-colors"
+              >
+                No, maybe later
+              </button>
+              <button
+                onClick={() => {
+                  setShowSuccessPopup(false)
+                  navigate(`/departments?event_id=${createdEventId}&event_title=${encodeURIComponent(createdEventTitle)}`)
+                }}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-[#2d5f5d] hover:bg-[#3a7a78] text-sm text-white font-medium transition-colors"
+              >
+                Yes, create team →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

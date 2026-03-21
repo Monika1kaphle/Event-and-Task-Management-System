@@ -12,36 +12,18 @@ import {
   CalendarPlus,
   List,
 } from 'lucide-react'
+
 interface SidebarProps {
   onLogout: () => void
 }
+
 export function Sidebar({ onLogout }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
+
   const isEventSection = location.pathname.startsWith('/events')
   const [eventExpanded, setEventExpanded] = useState(isEventSection)
-  const menuItems = [
-    {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      path: '/dashboard',
-    },
-    {
-      name: 'User Management',
-      icon: Users,
-      path: '/users',
-    },
-    {
-      name: 'Department Management',
-      icon: Building2,
-      path: '/departments',
-    },
-    {
-      name: 'Task Management',
-      icon: CheckSquare,
-      path: '/tasks',
-    },
-  ]
+
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#0f1419] border-r border-gray-800 flex flex-col z-50">
       {/* Logo */}
@@ -53,56 +35,75 @@ export function Sidebar({ onLogout }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 space-y-1">
-        {/* Dashboard, User Management, Department Management */}
-        {menuItems.slice(0, 3).map((item) => {
-          const isActive = location.pathname === item.path
-          const Icon = item.icon
-          return (
-            <button
-              key={item.name}
-              onClick={() => navigate(item.path)}
-              className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'}`}
-            >
-              <Icon
-                className={`h-5 w-5 ${isActive ? 'text-[#2d5f5d]' : 'text-gray-500'}`}
-              />
-              <span>{item.name}</span>
-            </button>
-          )
-        })}
+      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+
+        {/* Dashboard */}
+        <NavItem
+          icon={LayoutDashboard}
+          label="Dashboard"
+          path="/dashboard"
+          currentPath={location.pathname}
+          onClick={() => navigate('/dashboard')}
+        />
+
+        {/* User Management */}
+        <NavItem
+          icon={Users}
+          label="User Management"
+          path="/users"
+          currentPath={location.pathname}
+          onClick={() => navigate('/users')}
+        />
+
+        {/* Department Management */}
+        <NavItem
+          icon={Building2}
+          label="Department Management"
+          path="/departments"
+          currentPath={location.pathname}
+          onClick={() => navigate('/departments')}
+        />
 
         {/* Event Management — Expandable */}
         <div>
           <button
             onClick={() => setEventExpanded(!eventExpanded)}
-            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isEventSection ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'}`}
+            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+              isEventSection
+                ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]'
+                : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'
+            }`}
           >
             <div className="flex items-center space-x-3">
-              <Calendar
-                className={`h-5 w-5 ${isEventSection ? 'text-[#2d5f5d]' : 'text-gray-500'}`}
-              />
+              <Calendar className={`h-5 w-5 ${isEventSection ? 'text-[#2d5f5d]' : 'text-gray-500'}`} />
               <span>Event Management</span>
             </div>
-            {eventExpanded ? (
-              <ChevronDown size={16} className="text-gray-500" />
-            ) : (
-              <ChevronRight size={16} className="text-gray-500" />
-            )}
+            {eventExpanded
+              ? <ChevronDown size={16} className="text-gray-500" />
+              : <ChevronRight size={16} className="text-gray-500" />
+            }
           </button>
 
           {eventExpanded && (
             <div className="ml-6 mt-1 space-y-0.5 border-l border-gray-800/50 pl-4">
               <button
                 onClick={() => navigate('/events')}
-                className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${location.pathname === '/events' ? 'text-[#4fd1c5] bg-[#2d5f5d]/10' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'}`}
+                className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                  location.pathname === '/events'
+                    ? 'text-[#4fd1c5] bg-[#2d5f5d]/10'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
               >
                 <List size={16} />
                 <span>All Events</span>
               </button>
               <button
                 onClick={() => navigate('/events/create')}
-                className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${location.pathname === '/events/create' ? 'text-[#4fd1c5] bg-[#2d5f5d]/10' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'}`}
+                className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                  location.pathname === '/events/create'
+                    ? 'text-[#4fd1c5] bg-[#2d5f5d]/10'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
               >
                 <CalendarPlus size={16} />
                 <span>Post Event</span>
@@ -112,22 +113,14 @@ export function Sidebar({ onLogout }: SidebarProps) {
         </div>
 
         {/* Task Management */}
-        {menuItems.slice(3).map((item) => {
-          const isActive = location.pathname === item.path
-          const Icon = item.icon
-          return (
-            <button
-              key={item.name}
-              onClick={() => navigate(item.path)}
-              className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]' : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'}`}
-            >
-              <Icon
-                className={`h-5 w-5 ${isActive ? 'text-[#2d5f5d]' : 'text-gray-500'}`}
-              />
-              <span>{item.name}</span>
-            </button>
-          )
-        })}
+        <NavItem
+          icon={CheckSquare}
+          label="Task Management"
+          path="/tasks"
+          currentPath={location.pathname}
+          onClick={() => navigate('/tasks')}
+        />
+
       </nav>
 
       {/* Sign Out */}
@@ -141,5 +134,35 @@ export function Sidebar({ onLogout }: SidebarProps) {
         </button>
       </div>
     </aside>
+  )
+}
+
+// Reusable nav item to avoid repetition
+function NavItem({
+  icon: Icon,
+  label,
+  path,
+  currentPath,
+  onClick,
+}: {
+  icon: any
+  label: string
+  path: string
+  currentPath: string
+  onClick: () => void
+}) {
+  const isActive = currentPath === path
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+        isActive
+          ? 'bg-[#2d5f5d]/10 text-[#2d5f5d] border-l-2 border-[#2d5f5d]'
+          : 'text-gray-400 hover:bg-gray-800/50 hover:text-white border-l-2 border-transparent'
+      }`}
+    >
+      <Icon className={`h-5 w-5 ${isActive ? 'text-[#2d5f5d]' : 'text-gray-500'}`} />
+      <span>{label}</span>
+    </button>
   )
 }
