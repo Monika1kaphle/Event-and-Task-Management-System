@@ -179,13 +179,14 @@ export function UserManagement({ onLogout }: UserManagementProps) {
   }
 
   const filteredUsers = users.filter(user => {
+    const isRelevantRole = user.role === 'DEPT_HEAD' || user.role === 'MEMBER'
     const matchesFilter = filter === 'All' || user.status === 'Pending OTP'
     const matchesSearch =
       user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       getDeptName(user.department_id).toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesFilter && matchesSearch
+    return isRelevantRole && matchesFilter && matchesSearch
   })
 
   return (

@@ -12,6 +12,9 @@ const clientRoutes = require('./routes/clientRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 const userRoutes = require('./routes/users'); // ✅ ADD THIS
+const taskRoutes = require('./routes/taskRoutes')
+const notificationRoutes = require('./routes/notificationRoutes')
+
 
 const app = express();
 
@@ -38,3 +41,6 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 3000; 
 app.listen(port, () => console.log(`✅ Server listening on port ${port}`));
+
+app.use('/api/tasks', taskRoutes)
+app.use('/api/notifications', notificationRoutes)

@@ -3,19 +3,19 @@ const User = require('../models/user');
 const db = require('../config/db');
 const { sendOTPEmail } = require('../services/emailService');
 
-// ── OLD DASHBOARD FUNCTIONS (keep these — routes/admin.js uses them) ──
+// ── DASHBOARD FUNCTIONS ──
 
 async function getDashboardData(req, res) {
   try {
-    const [[userCount]] = await db.query('SELECT COUNT(*) as count FROM users')
+    const [[userCount]]  = await db.query('SELECT COUNT(*) as count FROM users')
     const [[eventCount]] = await db.query('SELECT COUNT(*) as count FROM events')
-    const [[deptCount]] = await db.query('SELECT COUNT(*) as count FROM departments')
-    const [[taskCount]] = await db.query('SELECT COUNT(*) as count FROM tasks')
+    const [[deptCount]]  = await db.query('SELECT COUNT(*) as count FROM departments')
+    const [[taskCount]]  = await db.query('SELECT COUNT(*) as count FROM tasks')
     res.json({
-      totalUsers: userCount.count,
-      totalEvents: eventCount.count,
+      totalUsers:       userCount.count,
+      totalEvents:      eventCount.count,
       totalDepartments: deptCount.count,
-      totalTasks: taskCount.count,
+      totalTasks:       taskCount.count,
     })
   } catch (err) {
     console.error('getDashboardData error:', err)
@@ -26,7 +26,7 @@ async function getDashboardData(req, res) {
 async function getUsers(req, res) {
   try {
     const [rows] = await db.query(
-      'SELECT id, name, email, role, status, created_at FROM users'
+      'SELECT id, name, email, role, status, department_id, role_title, created_at FROM users'
     )
     res.json(rows)
   } catch (err) {
@@ -74,7 +74,38 @@ async function assignTask(req, res) {
   }
 }
 
-// ── NEW INVITE FUNCTIONS (used by routes/users.js) ──
+// ── EVENT FUNCTIONS ──
+
+async function getEvents(req, res) {
+  try {
+    const [rows] = await db.query('SELECT * FROM events ORDER BY event_date ASC')
+    res.json(rows)
+  } catch (err) {
+    console.error('getEvents error:', err)
+    res.status(500).json({ error: 'Failed to fetch events' })
+  }
+}
+
+async function postEvent(req, res) {
+  try {
+    const { title, event_date, event_time, description, price, location, max_capacity } = req.body
+    if (!event_date || !event_time) {
+      return res.status(400).json({ error: 'Date and Time are required.' })
+    }
+    const poster_url = req.file ? `uploads/posters/${req.file.filename}` : null
+    const [result] = await db.query(
+      `INSERT INTO events (title, event_date, event_time, description, poster_url, price, location, max_capacity)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, event_date, event_time, description, poster_url, price || 0, location || '', max_capacity || null]
+    )
+    res.status(201).json({ id: result.insertId, title })
+  } catch (err) {
+    console.error('postEvent error:', err)
+    res.status(500).json({ error: 'Failed to create event' })
+  }
+}
+
+// ── USER MANAGEMENT FUNCTIONS ──
 
 async function inviteDeptHead(req, res) {
   const { fullName, email, departmentId } = req.body
@@ -85,6 +116,7 @@ async function inviteDeptHead(req, res) {
     const existing = await User.findByEmail(email)
     if (existing) return res.status(409).json({ error: 'User with this email already exists' })
 
+    // ✅ Use 'DEPT_HEAD' and 'Pending OTP' — must match DB enum after SQL fix above
     await db.query(
       `INSERT INTO users (name, email, department_id, role, status, password)
        VALUES (?, ?, ?, 'DEPT_HEAD', 'Pending OTP', NULL)`,
@@ -98,7 +130,7 @@ async function inviteDeptHead(req, res) {
     res.status(201).json({ message: 'Invitation sent to ' + email })
   } catch (err) {
     console.error('Invite Error:', err)
-    res.status(500).json({ error: 'Failed to process invitation' })
+    res.status(500).json({ error: 'Failed to process invitation: ' + err.message })
   }
 }
 
@@ -124,7 +156,7 @@ async function inviteMember(req, res) {
     res.status(201).json({ message: 'Member invitation sent to ' + email })
   } catch (err) {
     console.error('Invite Member Error:', err)
-    res.status(500).json({ error: 'Failed to process invitation' })
+    res.status(500).json({ error: 'Failed to process invitation: ' + err.message })
   }
 }
 
@@ -174,8 +206,8 @@ async function updateUser(req, res) {
   }
   try {
     const payload = {}
-    if (req.body.name) payload.name = req.body.name
-    if (req.body.email) payload.email = req.body.email
+    if (req.body.name)     payload.name     = req.body.name
+    if (req.body.email)    payload.email    = req.body.email
     if (req.body.password) payload.password = await bcrypt.hash(req.body.password, 10)
     await User.updateUser(id, payload)
     const updated = await User.findById(id)
@@ -194,52 +226,15 @@ async function deleteUser(req, res) {
     res.status(500).json({ error: 'Delete failed' })
   }
 }
-// ── EVENT FUNCTIONS (used by routes/eventRoutes.js) ──
 
-async function getEvents(req, res) {
-  try {
-    const [rows] = await db.query('SELECT * FROM events ORDER BY event_date ASC')
-    res.json(rows)
-  } catch (err) {
-    console.error('getEvents error:', err)
-    res.status(500).json({ error: 'Failed to fetch events' })
-  }
-}
-
-async function postEvent(req, res) {
-  try {
-    const { title, event_date, event_time, description, price, location, max_capacity } = req.body
-    if (!event_date || !event_time) {
-      return res.status(400).json({ error: 'Date and Time are required.' })
-    }
-
-    const poster_url = req.file
-      ? `uploads/posters/${req.file.filename}`
-      : null
-
-    const [result] = await db.query(
-      `INSERT INTO events (title, event_date, event_time, description, poster_url, price, location, max_capacity)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, event_date, event_time, description, poster_url, price || 0, location || '', max_capacity || null]
-    )
-
-    res.status(201).json({ id: result.insertId, title })
-  } catch (err) {
-    console.error('postEvent error:', err)
-    res.status(500).json({ error: 'Failed to create event' })
-  }
-}
 module.exports = {
-  // Dashboard
   getDashboardData,
   getUsers,
   getDepartments,
   addDepartment,
   assignTask,
-  // Events  ← add these two
   getEvents,
   postEvent,
-  // User management
   inviteDeptHead,
   inviteMember,
   createUser,

@@ -7,6 +7,8 @@ import { MyBookingsPage } from '../User/MyBookings/Mybookingspage'
 import { Bell, Search } from 'lucide-react'
 import { StreakBadge } from '../../components/ui/StreakBadge'
 import { StreakCelebration } from '../../components/ui/StreakCelebration'
+import { NotificationBell } from '../../components/ui/NotificationBell'
+
 
 interface UserDashboardPageProps {
   onLogout: () => void
