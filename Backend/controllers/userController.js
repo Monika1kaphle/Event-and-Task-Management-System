@@ -24,7 +24,7 @@ async function inviteDeptHead(req, res) {
 
         // 3. Create the user in the database
         // We set password to null and status to 'Pending OTP'
-        await db.query(
+        const [result] = await db.query(
             `INSERT INTO users (full_name, email, department_id, role, status, otp_code) 
              VALUES (?, ?, ?, 'DEPT_HEAD', 'Pending OTP', ?)`,
             [fullName, email, departmentId, otp]
@@ -32,6 +32,24 @@ async function inviteDeptHead(req, res) {
 
         // 4. Send the OTP via Email
         await sendOTPEmail(email, otp);
+
+        // 5. Send notification to the newly created department head
+        try {
+            const [[dept]] = await db.query('SELECT name FROM departments WHERE id = ?', [departmentId]);
+            const userId = result.insertId;
+            await db.query(
+                'INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)',
+                [
+                    userId,
+                    'Department Head Invitation',
+                    `You have been invited as the head of the "${dept?.name || 'Department'}" department. Please verify your email to complete setup.`,
+                    'DEPT_HEAD_ASSIGNED'
+                ]
+            );
+        } catch (notifErr) {
+            console.error('Notification error:', notifErr.message);
+            // Continue even if notification fails
+        }
 
         res.status(201).json({ message: "Invitation sent successfully to " + email });
     } catch (err) {

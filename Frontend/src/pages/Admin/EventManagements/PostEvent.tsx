@@ -48,6 +48,20 @@ export function PostEvent({ onLogout }: PostEventProps) {
   const [posterFile, setPosterFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [events, setEvents] = useState<any[]>([])
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
+
+  // Sync token from localStorage
+  useEffect(() => {
+    const currentToken = localStorage.getItem('token')
+    setToken(currentToken)
+    if (!currentToken) {
+      console.warn('⚠️ No token found in localStorage - user might not be logged in')
+    } else {
+      console.log('✅ Token loaded from localStorage:', currentToken.substring(0, 20) + '...')
+    }
+  }, [])
+
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   // ✅ Popup state
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
@@ -71,10 +85,17 @@ export function PostEvent({ onLogout }: PostEventProps) {
     : '00:00'
 
   useEffect(() => {
-    axios.get('http://localhost:3000/api/events')
+    if (!token) return // Don't fetch without token
+    
+    axios.get('http://localhost:3000/api/events', { headers })
       .then(res => setEvents(res.data))
-      .catch(err => console.error('Error fetching events:', err))
-  }, [])
+      .catch(err => {
+        console.error('Error fetching events:', err)
+        if (err.response?.status === 401) {
+          onLogout()
+        }
+      })
+  }, [token])
 
   const totalEvents = events.length
   const upcomingEvents = events.filter(e => computeStatus(e.event_date, e.event_time) === 'Upcoming').length
@@ -110,7 +131,16 @@ export function PostEvent({ onLogout }: PostEventProps) {
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!token) {
+      alert('❌ Error: Not authenticated. Please log in again.')
+      onLogout()
+      return
+    }
+
     setIsLoading(true)
+
+    console.log('📤 Posting event with token:', token.substring(0, 20) + '...')
 
     try {
       const dataToSend = new FormData()
@@ -125,6 +155,7 @@ export function PostEvent({ onLogout }: PostEventProps) {
 
       const response = await fetch('http://localhost:3000/api/events/post', {
         method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
         body: dataToSend
       })
 
@@ -138,7 +169,11 @@ export function PostEvent({ onLogout }: PostEventProps) {
         setPosterPreview(null)
         setPosterFile(null)
         setShowSuccessPopup(true)
+      } else if (response.status === 401) {
+        console.error('❌ Unauthorized:', data.error)
+        onLogout()
       } else {
+        console.error('❌ Error posting event:', data.error)
         alert('Error: ' + data.error)
       }
     } catch (error) {

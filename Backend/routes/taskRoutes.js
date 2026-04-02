@@ -3,6 +3,7 @@ const router = express.Router()
 const { loginRequired, attachUser } = require('../middleware/auth')
 const { authorizeRoles } = require('../middleware/roles')
 const db = require('../config/db')
+const { sendTaskAssignmentEmail } = require('../services/emailService')
 
 router.use(loginRequired, attachUser)
 
@@ -76,15 +77,40 @@ router.post('/', authorizeRoles('ADMIN', 'DEPT_HEAD'), async (req, res) => {
     )
     const taskId = result.insertId
 
-    // Notify the assigned user
-    const [[assignedUser]] = await db.query('SELECT name FROM users WHERE id = ?', [assigned_to])
+    // Get assigned user details for email
+    const [[assignedUser]] = await db.query('SELECT name, email FROM users WHERE id = ?', [assigned_to])
+    
+    // Get department name
+    const [[dept]] = await db.query('SELECT name FROM departments WHERE id = ?', [department_id])
+
+    // Notify the assigned user in-app
+    const deadlineStr = deadline ? new Date(deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'No deadline'
+    const notificationMessage = `You have been assigned a new task: "${title}" (Priority: ${priority}) | Deadline: ${deadlineStr} | Assigned by ${req.user.name || 'Admin'}`
     await notify(
       assigned_to,
       'New Task Assigned',
-      `You have been assigned a new task: "${title}" by ${req.user.name || 'Admin'}`,
+      notificationMessage,
       'TASK_ASSIGNED',
       taskId
     )
+
+    // Send email notification to assigned user
+    if (assignedUser && assignedUser.email) {
+      try {
+        await sendTaskAssignmentEmail(
+          assignedUser.email,
+          assignedUser.name,
+          title,
+          description || '',
+          dept ? dept.name : 'General',
+          deadline || null,
+          req.user.name || 'System Admin'
+        )
+      } catch (emailErr) {
+        console.error('Email sending error:', emailErr.message)
+        // Don't fail the task creation if email fails, just log it
+      }
+    }
 
     res.status(201).json({ id: taskId, title })
   } catch (err) {
@@ -101,9 +127,17 @@ router.put('/:id', async (req, res) => {
     const [[task]] = await db.query('SELECT * FROM tasks WHERE id = ?', [taskId])
     if (!task) return res.status(404).json({ error: 'Task not found' })
 
-    // Check permission
+    // Check permission based on role
     if (req.user.role === 'MEMBER' && task.assigned_to !== req.user.id) {
-      return res.status(403).json({ error: 'Forbidden' })
+      return res.status(403).json({ error: 'Forbidden: Members can only update their own tasks' })
+    }
+    
+    // Check DEPT_HEAD can only update tasks in their department
+    if (req.user.role === 'DEPT_HEAD') {
+      const [[userDept]] = await db.query('SELECT department_id FROM users WHERE id = ?', [req.user.id])
+      if (userDept?.department_id !== task.department_id) {
+        return res.status(403).json({ error: 'Forbidden: You can only update tasks in your department' })
+      }
     }
 
     const updates = []

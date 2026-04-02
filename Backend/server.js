@@ -31,7 +31,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/client', clientRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/departments', departmentRoutes);
-app.use('/api/users', userRoutes); // ✅ ADD THIS
+app.use('/api/users', userRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error Handling
 app.use((err, req, res, next) => {
@@ -41,6 +43,3 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 3000; 
 app.listen(port, () => console.log(`✅ Server listening on port ${port}`));
-
-app.use('/api/tasks', taskRoutes)
-app.use('/api/notifications', notificationRoutes)

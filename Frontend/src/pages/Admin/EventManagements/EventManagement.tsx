@@ -36,17 +36,44 @@ export function EventManagement({ onLogout }: EventManagementProps) {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
+  const token = localStorage.getItem('token')
+
   useEffect(() => {
-    axios.get('http://localhost:3000/api/events')
-      .then(response => {
-        setEvents(response.data)
+    if (!token) {
+      console.warn('No token found, logging out')
+      onLogout()
+      return
+    }
+    
+    const fetchEvents = async () => {
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      try {
+        const response = await axios.get('http://localhost:3000/api/events', { headers })
+        setEvents(response.data || [])
         setLoading(false)
-      })
-      .catch(error => {
+      } catch (error: any) {
         console.error("Error fetching events:", error)
+        
+        // Handle 401 Unauthorized
+        if (error.response?.status === 401) {
+          console.warn('401 Unauthorized - token may be expired')
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          onLogout()
+          return
+        }
+        
+        // Handle network errors
+        if (error.message === 'Network Error') {
+          console.error('Network error: Backend may not be running')
+        }
+        
         setLoading(false)
-      })
-  }, [])
+      }
+    }
+    
+    fetchEvents()
+  }, [token, onLogout])
 
   const filteredEvents = events.filter(event =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase())

@@ -143,4 +143,149 @@ const sendLoginOTPEmail = async (targetEmail, otp) => {
     return await transporter.sendMail(mailOptions);
 };
 
-module.exports = { sendOTPEmail, sendLoginOTPEmail };
+// ── Task Assignment Notification Email ──
+const sendTaskAssignmentEmail = async (targetEmail, assigneeName, taskTitle, taskDescription, deptName, deadline, createdBy) => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const mailOptions = {
+        from: `"E&T System" <${process.env.EMAIL_USER}>`,
+        to: targetEmail,
+        subject: `📋 New Task Assigned: ${taskTitle}`,
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background-color:#0d1117;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0d1117;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+          <!-- Logo / Brand -->
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#2d5f5d;border-radius:12px;width:44px;height:44px;text-align:center;vertical-align:middle;">
+                    <span style="font-size:22px;color:#ffffff;font-weight:bold;line-height:44px;">E</span>
+                  </td>
+                  <td style="padding-left:10px;vertical-align:middle;">
+                    <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">E&amp;T Management</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#161b22;border:1px solid #30363d;border-radius:16px;padding:36px 32px;">
+
+              <!-- Title -->
+              <h1 style="margin:0 0 8px 0;font-size:22px;font-weight:700;color:#ffffff;">
+                📋 New Task Assigned
+              </h1>
+              <p style="margin:0 0 28px 0;font-size:14px;color:#9ca3af;line-height:1.6;">
+                Hi <strong>${assigneeName}</strong>, you have been assigned a new task. Check the details below:
+              </p>
+
+              <!-- Task Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td style="background-color:#0d1117;border:1px solid #2d5f5d;border-radius:12px;padding:24px;text-align:left;">
+                    
+                    <!-- Task Title -->
+                    <p style="margin:0 0 12px 0;font-size:12px;font-weight:600;color:#4fd1c5;text-transform:uppercase;letter-spacing:1px;">
+                      Task
+                    </p>
+                    <h2 style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#ffffff;">
+                      ${taskTitle}
+                    </h2>
+
+                    <!-- Task Description -->
+                    ${taskDescription ? `
+                    <p style="margin:0 0 16px 0;font-size:13px;color:#9ca3af;line-height:1.6;">
+                      <strong>Description:</strong><br/>
+                      ${taskDescription}
+                    </p>
+                    ` : ''}
+
+                    <!-- Task Meta Info -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;border-top:1px solid #30363d;padding-top:16px;">
+                      <tr>
+                        <td style="padding:8px 0;font-size:13px;color:#9ca3af;">
+                          <strong>Department:</strong>
+                        </td>
+                        <td style="padding:8px 0;font-size:13px;color:#ffffff;font-weight:600;text-align:right;">
+                          ${deptName}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;font-size:13px;color:#9ca3af;">
+                          <strong>Created By:</strong>
+                        </td>
+                        <td style="padding:8px 0;font-size:13px;color:#ffffff;font-weight:600;text-align:right;">
+                          ${createdBy}
+                        </td>
+                      </tr>
+                      ${deadline ? `
+                      <tr>
+                        <td style="padding:8px 0;font-size:13px;color:#9ca3af;">
+                          <strong>Deadline:</strong>
+                        </td>
+                        <td style="padding:8px 0;font-size:13px;color:#ffffff;font-weight:600;text-align:right;">
+                          ${new Date(deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
+
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${frontendUrl}/tasks"
+                       style="display:inline-block;background-color:#2d5f5d;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:10px;letter-spacing:0.3px;">
+                      View Task Dashboard &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Divider -->
+              <hr style="border:none;border-top:1px solid #30363d;margin:0 0 20px 0;">
+
+              <!-- Footer Message -->
+              <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.6;">
+                You are receiving this email because a task has been assigned to you in the E&amp;T Management System. 
+                Please log in to the system to view more details and update your progress.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:20px;">
+              <p style="margin:0;font-size:11px;color:#4b5563;">
+                © ${new Date().getFullYear()} E&amp;T Management System. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `
+    };
+
+    return await transporter.sendMail(mailOptions);
+};
+
+module.exports = { sendOTPEmail, sendLoginOTPEmail, sendTaskAssignmentEmail };

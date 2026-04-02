@@ -51,6 +51,29 @@ async function addDepartment(req, res) {
       'INSERT INTO departments (name, head_id) VALUES (?, ?)',
       [name, head_id || null]
     )
+    
+    // Send notification to department head if assigned
+    if (head_id) {
+      try {
+        const [[headUser]] = await db.query('SELECT name, email FROM users WHERE id = ?', [head_id])
+        if (headUser) {
+          // Create in-app notification
+          await db.query(
+            'INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)',
+            [
+              head_id,
+              'Department Head Assignment',
+              `You have been assigned as the head of the "${name}" department.`,
+              'DEPT_HEAD_ASSIGNED'
+            ]
+          )
+        }
+      } catch (notifErr) {
+        console.error('Notification error:', notifErr.message)
+        // Continue even if notification fails
+      }
+    }
+    
     res.status(201).json({ id: result.insertId, name, head_id: head_id || null })
   } catch (err) {
     res.status(500).json({ error: 'Failed to add department' })
@@ -117,7 +140,7 @@ async function inviteDeptHead(req, res) {
     if (existing) return res.status(409).json({ error: 'User with this email already exists' })
 
     // ✅ Use 'DEPT_HEAD' and 'Pending OTP' — must match DB enum after SQL fix above
-    await db.query(
+    const [result] = await db.query(
       `INSERT INTO users (name, email, department_id, role, status, password)
        VALUES (?, ?, ?, 'DEPT_HEAD', 'Pending OTP', NULL)`,
       [fullName, email, departmentId]
@@ -126,6 +149,24 @@ async function inviteDeptHead(req, res) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
     await User.saveOTP(email, otp)
     await sendOTPEmail(email, otp)
+
+    // Send notification to the newly created department head
+    try {
+      const [[dept]] = await db.query('SELECT name FROM departments WHERE id = ?', [departmentId])
+      const userId = result.insertId
+      await db.query(
+        'INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)',
+        [
+          userId,
+          'Department Head Invitation',
+          `You have been invited as the head of the "${dept?.name || 'Department'}" department. Please verify your email to complete setup.`,
+          'DEPT_HEAD_ASSIGNED'
+        ]
+      )
+    } catch (notifErr) {
+      console.error('Notification error:', notifErr.message)
+      // Continue even if notification fails
+    }
 
     res.status(201).json({ message: 'Invitation sent to ' + email })
   } catch (err) {

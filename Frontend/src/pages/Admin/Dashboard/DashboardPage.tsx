@@ -1,4 +1,6 @@
 import { Sidebar } from '../../../components/layout/Sidebar'
+import { useNavigate } from 'react-router-dom'
+// BarChart3 can be removed from imports if not used elsewhere
 import { AddDepartmentCard } from '../../../components/dashboard/AddDepartmentCard'
 import { CalendarCard } from '../../../components/dashboard/CalendarCard'
 import { DepartmentProgressCard } from '../../../components/dashboard/DepartmentProgressCard'
@@ -10,6 +12,8 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ onLogout }: DashboardPageProps) {
+  const navigate = useNavigate()
+
   return (
     <div className="min-h-screen bg-[#0f1419] text-white flex overflow-hidden">
       {/* Sidebar - Fixed Width */}
@@ -18,31 +22,36 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen custom-scrollbar">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold">Dashboard Overview</h1>
-          <p className="text-gray-400 text-sm">Managing Departments & Staff</p>
+      <main className="flex-1 ml-64 p-8 overflow-y-auto custom-scrollbar" style={{ display: 'flex', flexDirection: 'column' }}>
+        <header className="mb-8 flex justify-between items-start flex-shrink-0">
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+            <p className="text-gray-400 text-sm">Managing Departments & Staff</p>
+          </div>
+          {/* Button removed from here */}
         </header>
 
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
           {/* Top Row: Using a 12-column grid for better distribution */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            <div className="lg:col-span-3">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+            <div>
               <AddDepartmentCard />
             </div>
-            <div className="lg:col-span-5">
+            <div>
               <CalendarCard />
             </div>
-            <div className="lg:col-span-4">
+            <div>
               <DepartmentProgressCard />
             </div>
           </div>
 
           {/* Middle Row: Full Width Task Assignment */}
-          <AssignTaskCard />
+          <div style={{ width: '100%', flexShrink: 0 }}>
+            <AssignTaskCard />
+          </div>
 
-          {/* Bottom Row: Post Event */}
-          <div className="pb-8">
+          {/* Bottom Row: Full Width Post Event */}
+          <div style={{ width: '100%', flexShrink: 0, paddingBottom: '32px' }}>
             <PostEventCard />
           </div>
         </div>

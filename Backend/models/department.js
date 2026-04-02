@@ -9,8 +9,8 @@ async function createDepartment(name, head_id, event_id = null) {
 }
 
 async function getAllDepartments() {
-  // General departments only (not linked to any event)
-  const [rows] = await pool.query('SELECT * FROM departments WHERE event_id IS NULL');
+  // Return all departments
+  const [rows] = await pool.query('SELECT * FROM departments');
   return rows;
 }
 
@@ -38,4 +38,20 @@ async function getDepartmentProgress() {
   }));
 }
 
-module.exports = { createDepartment, getAllDepartments, getDepartmentsByEvent, getDepartmentProgress };
+async function updateDepartment(id, name) {
+  const [result] = await pool.query(
+    'UPDATE departments SET name = ? WHERE id = ?',
+    [name, id]
+  );
+  if (result.affectedRows === 0) throw new Error('Department not found');
+  const [rows] = await pool.query('SELECT * FROM departments WHERE id = ?', [id]);
+  return rows[0];
+}
+
+async function deleteDepartment(id) {
+  const [result] = await pool.query('DELETE FROM departments WHERE id = ?', [id]);
+  if (result.affectedRows === 0) throw new Error('Department not found');
+  return { message: 'Department deleted successfully' };
+}
+
+module.exports = { createDepartment, getAllDepartments, getDepartmentsByEvent, getDepartmentProgress, updateDepartment, deleteDepartment };
