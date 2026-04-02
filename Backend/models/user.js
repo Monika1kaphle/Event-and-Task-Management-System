@@ -5,7 +5,15 @@ async function createUser({ name, email, password, role = 'CLIENT', status = 'ac
     'INSERT INTO users (name, email, password, role, status, department_id, role_title) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [name, email, password || null, role, status, department_id, role_title]
   );
-  return { id: result.insertId, name, email, role, status };
+  return { id: result.insertId,name, email, role, status };
+}
+
+async function createMember({ name, email, department_id, role_title }) {
+  const [result] = await pool.query(
+    'INSERT INTO users (name, email, role, status, department_id, role_title) VALUES (?, ?, ?, ?, ?, ?)',
+    [name, email, 'MEMBER', 'active', department_id, role_title]
+  );
+  return { id: result.insertId, name, email, department_id, role_title };
 }
 
 async function findByEmail(email) {
@@ -19,6 +27,15 @@ async function findById(id) {
     [id]
   );
   return rows[0];
+}
+
+// Fixed: Returns both Members and Dept Heads for the department
+async function getMembersByDepartment(department_id) {
+  const [rows] = await pool.query(
+    'SELECT id, name, email, role, status, role_title, department_id, created_at FROM users WHERE department_id = ?',
+    [department_id]
+  );
+  return rows;
 }
 
 async function getAllUsers() {
@@ -85,7 +102,16 @@ async function verifyOTP(email, otpCode) {
 }
 
 module.exports = {
-  createUser, findByEmail, findById, getAllUsers,
-  updateUser, deactivateUser, incrementLoginAttempts,
-  resetLoginAttempts, saveOTP, verifyOTP
+  createUser, 
+  createMember,
+  findByEmail, 
+  findById, 
+  getAllUsers,
+  getMembersByDepartment,
+  updateUser, 
+  deactivateUser, 
+  incrementLoginAttempts,
+  resetLoginAttempts, 
+  saveOTP, 
+  verifyOTP
 };

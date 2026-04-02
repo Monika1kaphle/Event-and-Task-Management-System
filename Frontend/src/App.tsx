@@ -12,6 +12,7 @@ import { PaymentSuccess } from './pages/User/MyBookings/PaymentSuccess'
 import { DepartmentManagement } from './pages/Admin/DepartmentManagement/DepartmentManagement'
 import { SetPasswordPage } from './pages/auth/SetPasswordPages'
 import { DeptHeadDashboard } from './pages/DepartmentHead/DeptHeadDashboard'
+import { DeptHeadMemberPage } from './pages/DepartmentHead/DeptHeadMemberPage';
 
 export default function App() {
   const [user, setUser] = useState<any>(null)
@@ -140,6 +141,16 @@ export default function App() {
             !isLoggedIn   ? <Navigate to="/login" replace /> :
             !isDeptHead   ? <Navigate to="/" replace /> :
             <DeptHeadDashboard onLogout={handleLogout} />
+          }
+        />
+
+        {/* ── DEPT HEAD MEMBER MANAGEMENT ── */}
+        <Route
+          path="/members"
+          element={
+            !isLoggedIn   ? <Navigate to="/login" replace /> :
+            !isDeptHead   ? <Navigate to="/" replace /> :
+            <DeptHeadMemberPage onLogout={handleLogout} />
           }
         />
 

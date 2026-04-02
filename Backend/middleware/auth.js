@@ -22,7 +22,7 @@ async function attachUser(req, res, next) {
   if (!req.user) return next();
   const user = await User.findById(req.user.id);
   if (!user) return res.status(401).json({ error: 'User not found' });
-  req.user = { id: user.id, role: user.role, email: user.email, name: user.name };
+  req.user = { id: user.id, role: user.role, email: user.email, name: user.name, department_id: user.department_id };
   next();
 }
 

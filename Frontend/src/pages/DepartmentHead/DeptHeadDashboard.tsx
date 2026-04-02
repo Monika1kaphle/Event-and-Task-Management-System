@@ -1,6 +1,28 @@
 import { useState, useEffect } from 'react'
-import { Loader2, Bell } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { 
+  Loader2, 
+  Bell, 
+  CheckCircle2, 
+  Clock, 
+  BarChart3, 
+  LayoutDashboard, 
+  ChevronDown, 
+  User, 
+  LogOut,
+  TrendingUp
+} from 'lucide-react'
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area 
+} from 'recharts'
 import { Sidebar } from '../../components/layout/Sidebar'
 
 interface Task {
@@ -36,12 +58,14 @@ interface MemberStats {
   completionRate: number
 }
 
+
 export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [memberStats, setMemberStats] = useState<MemberStats[]>([])
   const [loading, setLoading] = useState(true)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   const token = localStorage.getItem('token')
   const userStr = localStorage.getItem('user')
@@ -49,15 +73,13 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   const fetchAll = async () => {
-    setLoading(true)
     try {
-      const [tasksRes, usersRes, notifRes] = await Promise.all([
+      const [tasksRes, notifRes] = await Promise.all([
         fetch('http://localhost:3000/api/tasks', { headers }),
-        fetch('http://localhost:3000/api/users', { headers }),
         fetch('http://localhost:3000/api/notifications', { headers }),
       ])
 
-      if (tasksRes.status === 401 || usersRes.status === 401 || notifRes.status === 401) {
+      if (tasksRes.status === 401 || notifRes.status === 401) {
         onLogout()
         return
       }
@@ -109,7 +131,7 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
 
   const unreadNotifications = notifications.filter(n => !n.is_read)
 
-  // Overview Stats
+  // Overview Stats (Department Wide)
   const totalTasks = tasks.length
   const completedTasks = tasks.filter(t => t.status === 'COMPLETED').length
   const inProgressTasks = tasks.filter(t => t.status === 'IN_PROGRESS').length
@@ -117,103 +139,187 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="min-h-screen bg-[#0f1419] text-white flex overflow-hidden">
+      {/* Sidebar */}
       <div className="w-64 fixed inset-y-0 left-0 z-50">
         <Sidebar onLogout={onLogout} />
       </div>
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-10">
+      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen custom-scrollbar">
+        {/* Header Section */}
+        <header className="flex justify-between items-start mb-10">
           <div>
-            <h1 className="text-5xl font-bold text-white mb-2">Department Head Dashboard</h1>
-            <p className="text-lg text-gray-400">Manage tasks and track team progress.</p>
+            <h1 className="text-4xl font-bold text-white tracking-tight">Department Head Dashboard</h1>
+            <p className="text-gray-400 mt-1 flex items-center gap-2">
+              <LayoutDashboard size={16} className="text-[#4fd1c5]" />
+              Manage tasks and track team progress for <span className="text-white font-medium">{user?.department || 'Department'}</span>
+            </p>
           </div>
-          <div className="flex gap-3 items-center">
+
+          <div className="flex gap-4 items-center">
+            {/* Notification Bell */}
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2.5 bg-[#161b22] border border-gray-800 hover:border-[#4fd1c5]/50 rounded-lg transition-all"
+              className="relative p-2.5 bg-[#161b22] border border-gray-800 hover:border-[#4fd1c5]/50 rounded-xl transition-all shadow-lg group"
             >
-              <Bell className="w-5 h-5 text-gray-400 hover:text-white" />
+              <Bell className="w-5 h-5 text-gray-400 group-hover:text-[#4fd1c5]" />
               {unreadNotifications.length > 0 && (
-                <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-[#0f1419]">
                   {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
                 </span>
               )}
             </button>
 
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-800 bg-[#161b22]">
-              <div className="w-8 h-8 rounded-full bg-[#2d5f5d] flex items-center justify-center text-white text-sm font-semibold">
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-              <div className="flex flex-col">
-                <p className="text-sm font-semibold text-white">{user?.name || 'Dept Head'}</p>
-                <p className="text-xs text-gray-500">{user?.role || 'DEPT_HEAD'}</p>
-              </div>
+            {/* Polished User Profile */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-3 px-3 py-2 rounded-xl border border-gray-800 bg-[#161b22] hover:border-gray-700 transition-all shadow-lg"
+              >
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2d5f5d] to-[#1a3a38] flex items-center justify-center text-white font-bold shadow-inner">
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+                <div className="hidden lg:flex flex-col text-left">
+                  <p className="text-sm font-bold text-white leading-none">{user?.name || 'Dept Head'}</p>
+                  <p className="text-[10px] text-[#4fd1c5] font-medium uppercase tracking-wider mt-1">
+                    {user?.role?.replace('_', ' ') || 'DEPT_HEAD'}
+                  </p>
+                </div>
+                <ChevronDown size={14} className={`text-gray-500 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-[#161b22] border border-gray-800 rounded-xl shadow-2xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+                  <button className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-800 flex items-center gap-2">
+                    <User size={14} /> Profile Settings
+                  </button>
+                  <div className="h-px bg-gray-800 my-1" />
+                  <button 
+                    onClick={onLogout}
+                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                  >
+                    <LogOut size={14} /> Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
-        {/* Notifications Panel */}
+        {/* Notifications Panel Overlay */}
         {showNotifications && (
-          <div className="fixed top-24 right-8 w-96 bg-[#161b22] border border-[#4fd1c5]/20 rounded-xl shadow-2xl z-40 max-h-96 overflow-y-auto">
+          <div className="fixed top-24 right-8 w-96 bg-[#161b22] border border-[#4fd1c5]/20 rounded-xl shadow-2xl z-40 max-h-[500px] overflow-y-auto animate-in slide-in-from-right-4 duration-200">
             <div className="p-6">
-              <h3 className="text-lg font-bold mb-4">Notifications</h3>
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                Notifications <span className="text-xs bg-[#4fd1c5]/10 text-[#4fd1c5] px-2 py-0.5 rounded-full">{unreadNotifications.length} New</span>
+              </h3>
               <div className="space-y-3">
-                {notifications.length === 0 ? <p className="text-gray-400">No notifications.</p> : 
+                {notifications.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No recent activity.</p>
+                ) : (
                   notifications.map(notif => (
-                    <div key={notif.id} className={`p-3 rounded-lg ${notif.is_read ? 'bg-gray-600/20' : 'bg-blue-500/20'}`}>
-                      <p className="font-semibold text-sm">{notif.title}</p>
-                      <p className="text-xs text-gray-300 mt-1">{notif.message}</p>
+                    <div key={notif.id} className={`p-4 rounded-lg border transition-colors ${notif.is_read ? 'bg-transparent border-gray-800/50' : 'bg-[#4fd1c5]/5 border-[#4fd1c5]/20'}`}>
+                      <p className="font-semibold text-sm text-white">{notif.title}</p>
+                      <p className="text-xs text-gray-400 mt-1">{notif.message}</p>
                     </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
         )}
 
         {loading ? (
-          <div className="flex justify-center items-center h-96">
-            <Loader2 className="w-8 h-8 animate-spin" />
+          <div className="flex flex-col justify-center items-center h-[60vh] gap-4">
+            <Loader2 className="w-10 h-10 animate-spin text-[#4fd1c5]" />
+            <p className="text-gray-500 animate-pulse font-medium">Synchronizing department data...</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in duration-500">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-[#1a3a38] to-[#0f2420] border border-[#4fd1c5]/20 rounded-xl p-6">
-                <p className="text-gray-400 text-sm mb-2">Total Tasks</p>
-                <p className="text-4xl font-bold text-[#4fd1c5]">{totalTasks}</p>
-              </div>
-              <div className="bg-gradient-to-br from-[#1a3a38] to-[#0f2420] border border-[#4fd1c5]/20 rounded-xl p-6">
-                <p className="text-gray-400 text-sm mb-2">Completed</p>
-                <p className="text-4xl font-bold text-green-400">{completedTasks}</p>
-              </div>
-              <div className="bg-gradient-to-br from-[#1a3a38] to-[#0f2420] border border-[#4fd1c5]/20 rounded-xl p-6">
-                <p className="text-gray-400 text-sm mb-2">In Progress</p>
-                <p className="text-4xl font-bold text-blue-400">{inProgressTasks}</p>
-              </div>
-              <div className="bg-gradient-to-br from-[#1a3a38] to-[#0f2420] border border-[#4fd1c5]/20 rounded-xl p-6">
-                <p className="text-gray-400 text-sm mb-2">Overall Progress</p>
-                <p className="text-4xl font-bold text-yellow-400">{overallProgress}%</p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: 'Total Tasks', value: totalTasks, color: 'text-[#4fd1c5]', icon: BarChart3, bg: 'from-[#1a3a38]/40' },
+                { label: 'Completed', value: completedTasks, color: 'text-green-400', icon: CheckCircle2, bg: 'from-green-900/10' },
+                { label: 'In Progress', value: inProgressTasks, color: 'text-blue-400', icon: Clock, bg: 'from-blue-900/10' },
+                { label: 'Overall Efficiency', value: `${overallProgress}%`, color: 'text-yellow-400', icon: TrendingUp, bg: 'from-yellow-900/10' }
+              ].map((card, i) => (
+                <div key={i} className={`bg-gradient-to-br ${card.bg} to-[#161b22] border border-gray-800 rounded-2xl p-6 hover:border-[#4fd1c5]/30 transition-all group`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <p className="text-gray-400 text-sm font-medium">{card.label}</p>
+                    <card.icon size={18} className="text-gray-600 group-hover:text-[#4fd1c5] transition-colors" />
+                  </div>
+                  <p className={`text-4xl font-bold ${card.color}`}>{card.value}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Department Progress Chart */}
-            <div className="bg-gradient-to-br from-[#161b22] to-[#0f1419] border border-[#4fd1c5]/20 rounded-xl p-8">
-              <h3 className="text-2xl font-bold mb-6">Department Progress</h3>
-              <div className="w-full h-80">
+            {/* Department Progress Chart (Member Breakdown) */}
+            <div className="bg-[#161b22]/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-8 shadow-xl">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                  <h3 className="text-xl font-bold">Team Performance Breakdown</h3>
+                  <p className="text-sm text-gray-500 mt-1">Comparison of assigned workload vs. completion efficiency per member</p>
+                </div>
+                <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider">
+                  <div className="flex items-center gap-2 text-[#4fd1c5]">
+                    <span className="w-3 h-3 rounded-full bg-[#4fd1c5]" /> Completion %
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <span className="w-3 h-3 rounded-full bg-gray-600" /> Tasks Assigned
+                  </div>
+                </div>
+              </div>
+              
+              <div className="w-full h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={memberStats}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2d4a48" />
-                    <XAxis dataKey="name" stroke="#999" />
-                    <YAxis stroke="#999" />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#161b22', borderColor: '#4fd1c5' }}
-                      labelStyle={{ color: '#fff' }}
+                  <AreaChart data={memberStats}>
+                    <defs>
+                      <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4fd1c5" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#4fd1c5" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#6b7280', fontSize: 12}} 
+                      dy={10} 
                     />
-                    <Legend />
-                    <Line type="monotone" dataKey="completionRate" stroke="#4fd1c5" strokeWidth={2} name="Completion %" />
-                    <Line type="monotone" dataKey="assigned" stroke="#999" strokeWidth={2} name="Assigned Tasks" />
-                  </LineChart>
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#6b7280', fontSize: 12}} 
+                    />
+                    <Tooltip
+                      contentStyle={{ 
+                        backgroundColor: '#161b22', 
+                        borderRadius: '12px', 
+                        border: '1px solid #374151', 
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' 
+                      }}
+                      itemStyle={{ fontSize: '12px' }}
+                    />
+                    <Legend verticalAlign="top" height={36}/>
+                    <Area 
+                      type="monotone" 
+                      dataKey="completionRate" 
+                      stroke="#4fd1c5" 
+                      strokeWidth={3} 
+                      fillOpacity={1} 
+                      fill="url(#colorRate)" 
+                      name="Completion Rate %" 
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="assigned" 
+                      stroke="#4b5563" 
+                      strokeWidth={2} 
+                      dot={{ r: 4, fill: '#161b22', strokeWidth: 2 }} 
+                      name="Total Tasks Assigned" 
+                    />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>

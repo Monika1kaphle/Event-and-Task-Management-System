@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -32,7 +32,6 @@ export function Sidebar({ onLogout }: SidebarProps) {
   const showUserMgmt = userRole === 'ADMIN'
   const showDeptMgmt = userRole === 'ADMIN'
   const showEvents = userRole === 'ADMIN'
-  const showTasks = userRole === 'ADMIN' || userRole === 'DEPT_HEAD'
   const showDeptHeadMenu = userRole === 'DEPT_HEAD'
 
   return (
@@ -150,14 +149,14 @@ export function Sidebar({ onLogout }: SidebarProps) {
               label="Task Management"
               path="/tasks"
               currentPath={location.pathname}
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/tasks')}
             />
             <NavItem
               icon={Users}
               label="Member Management"
               path="/members"
               currentPath={location.pathname}
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/members')}
             />
           </>
         )}

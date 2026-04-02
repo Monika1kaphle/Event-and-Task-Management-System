@@ -7,15 +7,15 @@ const { sendOTPEmail } = require('../services/emailService');
 
 async function getDashboardData(req, res) {
   try {
-    const [[userCount]]  = await db.query('SELECT COUNT(*) as count FROM users')
+    const [[userCount]] = await db.query('SELECT COUNT(*) as count FROM users')
     const [[eventCount]] = await db.query('SELECT COUNT(*) as count FROM events')
-    const [[deptCount]]  = await db.query('SELECT COUNT(*) as count FROM departments')
-    const [[taskCount]]  = await db.query('SELECT COUNT(*) as count FROM tasks')
+    const [[deptCount]] = await db.query('SELECT COUNT(*) as count FROM departments')
+    const [[taskCount]] = await db.query('SELECT COUNT(*) as count FROM tasks')
     res.json({
-      totalUsers:       userCount.count,
-      totalEvents:      eventCount.count,
+      totalUsers: userCount.count,
+      totalEvents: eventCount.count,
       totalDepartments: deptCount.count,
-      totalTasks:       taskCount.count,
+      totalTasks: taskCount.count,
     })
   } catch (err) {
     console.error('getDashboardData error:', err)
@@ -51,13 +51,11 @@ async function addDepartment(req, res) {
       'INSERT INTO departments (name, head_id) VALUES (?, ?)',
       [name, head_id || null]
     )
-    
-    // Send notification to department head if assigned
+
     if (head_id) {
       try {
         const [[headUser]] = await db.query('SELECT name, email FROM users WHERE id = ?', [head_id])
         if (headUser) {
-          // Create in-app notification
           await db.query(
             'INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)',
             [
@@ -70,10 +68,9 @@ async function addDepartment(req, res) {
         }
       } catch (notifErr) {
         console.error('Notification error:', notifErr.message)
-        // Continue even if notification fails
       }
     }
-    
+
     res.status(201).json({ id: result.insertId, name, head_id: head_id || null })
   } catch (err) {
     res.status(500).json({ error: 'Failed to add department' })
@@ -139,7 +136,6 @@ async function inviteDeptHead(req, res) {
     const existing = await User.findByEmail(email)
     if (existing) return res.status(409).json({ error: 'User with this email already exists' })
 
-    // ✅ Use 'DEPT_HEAD' and 'Pending OTP' — must match DB enum after SQL fix above
     const [result] = await db.query(
       `INSERT INTO users (name, email, department_id, role, status, password)
        VALUES (?, ?, ?, 'DEPT_HEAD', 'Pending OTP', NULL)`,
@@ -150,7 +146,6 @@ async function inviteDeptHead(req, res) {
     await User.saveOTP(email, otp)
     await sendOTPEmail(email, otp)
 
-    // Send notification to the newly created department head
     try {
       const [[dept]] = await db.query('SELECT name FROM departments WHERE id = ?', [departmentId])
       const userId = result.insertId
@@ -165,7 +160,6 @@ async function inviteDeptHead(req, res) {
       )
     } catch (notifErr) {
       console.error('Notification error:', notifErr.message)
-      // Continue even if notification fails
     }
 
     res.status(201).json({ message: 'Invitation sent to ' + email })
@@ -176,54 +170,78 @@ async function inviteDeptHead(req, res) {
 }
 
 async function inviteMember(req, res) {
-  const { fullName, email, departmentId, roleTitle } = req.body
-  if (!fullName || !email || !departmentId) {
-    return res.status(400).json({ error: 'Full Name, Email, and Department are required' })
+  const { fullName, email, roleTitle } = req.body;
+  let { departmentId } = req.body; 
+
+  if (!fullName || !email) {
+    return res.status(400).json({ error: 'Full Name and Email are required' });
   }
+
+  if (req.user.role === 'DEPT_HEAD') {
+    departmentId = req.user.department_id; 
+  } 
+
+  if (!departmentId) {
+    return res.status(400).json({ error: 'Department ID is required' });
+  }
+
   try {
-    const existing = await User.findByEmail(email)
-    if (existing) return res.status(409).json({ error: 'User with this email already exists' })
+    const existing = await User.findByEmail(email);
+    if (existing) return res.status(409).json({ error: 'User with this email already exists' });
 
     await db.query(
       `INSERT INTO users (name, email, department_id, role, role_title, status, password)
        VALUES (?, ?, ?, 'MEMBER', ?, 'Pending OTP', NULL)`,
       [fullName, email, departmentId, roleTitle || null]
-    )
+    );
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    await User.saveOTP(email, otp)
-    await sendOTPEmail(email, otp)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await User.saveOTP(email, otp);
+    await sendOTPEmail(email, otp, 'MEMBER'); 
 
-    res.status(201).json({ message: 'Member invitation sent to ' + email })
+    res.status(201).json({ message: 'Member invitation sent successfully to ' + email });
   } catch (err) {
-    console.error('Invite Member Error:', err)
-    res.status(500).json({ error: 'Failed to process invitation: ' + err.message })
+    console.error('Invite Member Error:', err);
+    res.status(500).json({ error: 'Failed to process invitation' });
   }
 }
 
 async function createUser(req, res) {
-  const { name, email, password, role } = req.body
-  if (!name || !email || !password || !role) {
+  const { full_name, email, password, role } = req.body
+  if (!full_name || !email || !password || !role) {
     return res.status(400).json({ error: 'All fields required' })
   }
   try {
     const existing = await User.findByEmail(email)
     if (existing) return res.status(409).json({ error: 'Email already exists' })
     const hashed = await bcrypt.hash(password, 10)
-    const user = await User.createUser({ name, email, password: hashed, role, status: 'active' })
-    res.status(201).json(user)
+    const user = await User.createUser({ name: full_name, email, password: hashed, role, status: 'active' })
+    res.json(user)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 }
 
 async function listUsers(req, res) {
-  try {
-    const users = await User.getAllUsers()
-    res.json(users)
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch users' })
-  }
+    try {
+        let query = `
+            SELECT u.id, u.name, u.email, u.role, u.status, u.department_id, u.role_title, d.name as department_name 
+            FROM users u 
+            LEFT JOIN departments d ON u.department_id = d.id
+        `;
+        let params = [];
+
+        if (req.user.role === 'DEPT_HEAD') {
+            query += " WHERE u.department_id = ?";
+            params.push(req.user.department_id);
+        }
+
+        const [rows] = await db.query(query, params);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error in listUsers:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 }
 
 async function getUser(req, res) {
@@ -247,8 +265,8 @@ async function updateUser(req, res) {
   }
   try {
     const payload = {}
-    if (req.body.name)     payload.name     = req.body.name
-    if (req.body.email)    payload.email    = req.body.email
+    if (req.body.full_name) payload.name = req.body.full_name
+    if (req.body.email) payload.email = req.body.email
     if (req.body.password) payload.password = await bcrypt.hash(req.body.password, 10)
     await User.updateUser(id, payload)
     const updated = await User.findById(id)
@@ -268,6 +286,20 @@ async function deleteUser(req, res) {
   }
 }
 
+async function getDepartmentMembers(req, res) {
+  try {
+    const departmentId = req.user?.department_id;
+    if (!departmentId) {
+      return res.status(400).json({ error: 'Department ID not found' });
+    }
+    const members = await User.getMembersByDepartment(departmentId);
+    res.json(members);
+  } catch (err) {
+    console.error('Error fetching department members:', err);
+    res.status(500).json({ error: 'Failed to fetch department members' });
+  }
+}
+
 module.exports = {
   getDashboardData,
   getUsers,
@@ -283,4 +315,5 @@ module.exports = {
   getUser,
   updateUser,
   deleteUser,
+  getDepartmentMembers,
 }
