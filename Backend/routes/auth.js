@@ -27,7 +27,7 @@ router.post('/send-otp', async (req, res) => {
     }
 
     // ── Pending OTP (dept head / member invited by Admin): OTP already in their inbox ──
-    if (user.status === 'Pending OTP') {
+    if (user.status === 'pending_otp') {
       return res.json({ message: 'OTP sent. Please enter the code from your invitation email.' });
     }
 
@@ -80,7 +80,7 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     // ── Dept head / member invited by admin: must set password first ──
-    if (user.status === 'Pending OTP') {
+    if (user.status === 'pending_otp') {
       const tempToken = jwt.sign(
         { id: user.id, email: user.email, step: 'set-password' },
         process.env.JWT_SECRET,
@@ -89,20 +89,20 @@ router.post('/verify-otp', async (req, res) => {
       return res.json({
         message: 'OTP verified. Please set your password.',
         tempToken,
-        user: { id: user.id, email: user.email, status: user.status, role: user.role }
+        user: { id: user.id, email: user.email, status: user.status, role: user.role, department_id: user.department_id || null }
       });
     }
 
     // ── Active user (regular OTP login): issue a full session token ──
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, department_id: user.department_id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
     return res.json({
       message: 'OTP verified successfully',
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status, department_id: user.department_id || null }
     });
   } catch (err) {
     console.error('verify-otp error:', err);
@@ -171,7 +171,7 @@ router.post('/login', async (req, res) => {
     await User.resetLoginAttempts(user.id)
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, department_id: user.department_id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
@@ -184,6 +184,7 @@ router.post('/login', async (req, res) => {
         email: user.email,
         role: user.role,
         status: user.status,
+        department_id: user.department_id || null
       }
     })
   } catch (err) {

@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 
 function signToken(user) {
   return jwt.sign(
-    { id: user.id, role: user.role },
+    { id: user.id, role: user.role, department_id: user.department_id },
      process.env.JWT_SECRET,
     {expiresIn: '12h'}
   );
@@ -50,9 +50,16 @@ async function login(req, res) {
   await User.resetLoginAttempts(user.id);
   const token = signToken(user);
 
+  console.log('✅ Login Success:', {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    department_id: user.department_id,
+  });
+
   res.json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, department_id: user.department_id || null }
   });
 }
 
@@ -130,12 +137,21 @@ async function verifyOtp(req, res) {
   // 🔹 ISSUE JWT (THIS WAS MISSING)
   const token = signToken(user);
 
+  console.log('🔐 OTP Verification Success:', {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    department_id: user.department_id,
+  });
+
   return res.json({
     token,
     user: {
       id: user.id,
+      name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      department_id: user.department_id || null
     }
   });
 }

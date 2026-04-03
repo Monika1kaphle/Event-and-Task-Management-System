@@ -7,6 +7,7 @@ import { UserManagement } from './pages/Admin/UserManagement/UserManagement'
 import { EventManagement } from './pages/Admin/EventManagements/EventManagement'
 import { PostEvent } from './pages/Admin/EventManagements/PostEvent'
 import { TaskManagement } from './pages/Admin/TaskManagement/TaskManagement'
+import DeptHeadTaskPage from './pages/DepartmentHead/DeptHeadTaskPage'
 import { UserDashboardPage } from './pages/Users/UserDashboardPage'
 import { PaymentSuccess } from './pages/User/MyBookings/PaymentSuccess'
 import { DepartmentManagement } from './pages/Admin/DepartmentManagement/DepartmentManagement'
@@ -123,14 +124,25 @@ export default function App() {
           path="/events/create"
           element={isAdmin ? <PostEvent onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
+        {/* ── ADMIN TASK MANAGEMENT ── */}
         <Route
           path="/tasks"
           element={
-            isAdmin || isDeptHead ? (
+            isAdmin ? (
               <TaskManagement onLogout={handleLogout} />
             ) : (
               <Navigate to="/login" replace />
             )
+          }
+        />
+
+        {/* ── DEPT HEAD TASK MANAGEMENT ── */}
+        <Route
+          path="/dept-tasks"
+          element={
+            !isLoggedIn   ? <Navigate to="/login" replace /> :
+            !isDeptHead   ? <Navigate to="/" replace /> :
+            <DeptHeadTaskPage onLogout={handleLogout} />
           }
         />
 

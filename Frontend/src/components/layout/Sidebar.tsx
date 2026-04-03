@@ -147,9 +147,9 @@ export function Sidebar({ onLogout }: SidebarProps) {
             <NavItem
               icon={CheckSquare}
               label="Task Management"
-              path="/tasks"
+              path="/dept-tasks"
               currentPath={location.pathname}
-              onClick={() => navigate('/tasks')}
+              onClick={() => navigate('/dept-tasks')}
             />
             <NavItem
               icon={Users}

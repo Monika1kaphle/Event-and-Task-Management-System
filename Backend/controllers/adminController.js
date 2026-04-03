@@ -136,11 +136,12 @@ async function inviteDeptHead(req, res) {
     const existing = await User.findByEmail(email)
     if (existing) return res.status(409).json({ error: 'User with this email already exists' })
 
+    // Create Department Head with department_id assigned
     const [result] = await db.query(
-      `INSERT INTO users (name, email, department_id, role, status, password)
-       VALUES (?, ?, ?, 'DEPT_HEAD', 'Pending OTP', NULL)`,
-      [fullName, email, departmentId]
-    )
+  `INSERT INTO users (name, email, department_id, role, status, password)
+   VALUES (?, ?, ?, 'DEPT_HEAD', 'Pending OTP', NULL)`,
+  [fullName, email, departmentId]
+)
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
     await User.saveOTP(email, otp)

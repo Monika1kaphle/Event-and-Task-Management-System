@@ -138,12 +138,14 @@ async function inviteDeptHead(req, res) {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // FIXED: Using 'name' for DB and 'fullName' from req.body
+    // Create Department Head with department_id assigned and status='pending_otp'
     const [result] = await db.query(
-      `INSERT INTO users (name, email, department_id, role, status, otp_code)
-       VALUES (?, ?, ?, 'DEPT_HEAD', 'Pending OTP', ?)`,
-      [fullName, email, departmentId, otp]
+      `INSERT INTO users (name, email, department_id, role, status, password)
+       VALUES (?, ?, ?, 'DEPT_HEAD', 'pending_otp', NULL)`,
+      [fullName, email, departmentId]
     );
+
+    console.log('✅ DEPT_HEAD Created:', { userId: result.insertId, email, departmentId, status: 'pending_otp' });
 
     await User.saveOTP(email, otp);
     await sendOTPEmail(email, otp);
@@ -191,12 +193,14 @@ async function inviteMember(req, res) {
     const existing = await User.findByEmail(email);
     if (existing) return res.status(409).json({ error: 'User already exists' });
 
-    // FIXED: Using 'name' column
-    await db.query(
+    // Create member with department_id assigned and status='pending_otp'
+    const [result] = await db.query(
       `INSERT INTO users (name, email, department_id, role, role_title, status, password)
-       VALUES (?, ?, ?, 'MEMBER', ?, 'Pending OTP', NULL)`,
+       VALUES (?, ?, ?, 'MEMBER', ?, 'pending_otp', NULL)`,
       [fullName, email, departmentId, roleTitle || null]
     );
+
+    console.log('✅ MEMBER Created:', { userId: result.insertId, email, departmentId, status: 'pending_otp' });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await User.saveOTP(email, otp);

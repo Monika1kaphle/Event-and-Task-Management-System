@@ -108,7 +108,6 @@ router.post('/', authorizeRoles('ADMIN', 'DEPT_HEAD'), async (req, res) => {
         )
       } catch (emailErr) {
         console.error('Email sending error:', emailErr.message)
-        // Don't fail the task creation if email fails, just log it
       }
     }
 
@@ -118,7 +117,7 @@ router.post('/', authorizeRoles('ADMIN', 'DEPT_HEAD'), async (req, res) => {
   }
 })
 
-// PUT update task progress/status (any role — own tasks or dept tasks)
+// PUT update task progress/status
 router.put('/:id', async (req, res) => {
   const taskId = parseInt(req.params.id)
   const { status, progress, description } = req.body
@@ -127,22 +126,21 @@ router.put('/:id', async (req, res) => {
     const [[task]] = await db.query('SELECT * FROM tasks WHERE id = ?', [taskId])
     if (!task) return res.status(404).json({ error: 'Task not found' })
 
-    // Check permission based on role
+    // --- PERMISSION CHECKS ---
+    // Member check: can only update their own tasks
     if (req.user.role === 'MEMBER' && task.assigned_to !== req.user.id) {
       return res.status(403).json({ error: 'Forbidden: Members can only update their own tasks' })
     }
-    
-    // Check DEPT_HEAD can only update tasks in their department
-    if (req.user.role === 'DEPT_HEAD') {
-      const [[userDept]] = await db.query('SELECT department_id FROM users WHERE id = ?', [req.user.id])
-      if (userDept?.department_id !== task.department_id) {
-        return res.status(403).json({ error: 'Forbidden: You can only update tasks in your department' })
-      }
+
+    // Dept Head check: can only update tasks assigned TO themselves
+    if (req.user.role === 'DEPT_HEAD' && task.assigned_to !== req.user.id) {
+      return res.status(403).json({ error: 'Only the assigned member can update this task.' })
     }
+    // -------------------------
 
     const updates = []
     const values = []
-    if (status !== undefined)   { updates.push('status = ?');   values.push(status) }
+    if (status !== undefined) { updates.push('status = ?'); values.push(status) }
     if (progress !== undefined) { updates.push('progress = ?'); values.push(progress) }
     if (description !== undefined) { updates.push('description = ?'); values.push(description) }
 
@@ -151,8 +149,8 @@ router.put('/:id', async (req, res) => {
 
     await db.query(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`, values)
 
-    // Notify admin and dept head when member updates
-    if (req.user.role === 'MEMBER' || req.user.role === 'DEPT_HEAD') {
+    // Notify logic when progress is made by anyone other than an Admin
+    if (req.user.role !== 'ADMIN') {
       const notifTitle = status === 'COMPLETED' ? 'Task Completed' : 'Task Progress Updated'
       const notifMsg = `"${task.title}" has been updated to ${status || 'in progress'} (${progress ?? task.progress}%) by ${req.user.name}`
       const notifType = status === 'COMPLETED' ? 'TASK_COMPLETED' : 'TASK_UPDATED'
@@ -177,11 +175,29 @@ router.put('/:id', async (req, res) => {
   }
 })
 
-// DELETE task (admin only)
-router.delete('/:id', authorizeRoles('ADMIN'), async (req, res) => {
+// DELETE task (admin can delete any, dept head can delete their department tasks)
+router.delete('/:id', authorizeRoles('ADMIN', 'DEPT_HEAD'), async (req, res) => {
   try {
-    await db.query('DELETE FROM tasks WHERE id = ?', [req.params.id])
-    res.json({ message: 'Task deleted' })
+    const taskId = parseInt(req.params.id)
+    const [[task]] = await db.query('SELECT * FROM tasks WHERE id = ?', [taskId])
+    
+    if (!task) return res.status(404).json({ error: 'Task not found' })
+
+    if (req.user.role === 'ADMIN') {
+      await db.query('DELETE FROM tasks WHERE id = ?', [taskId])
+      return res.json({ message: 'Task deleted' })
+    }
+
+    if (req.user.role === 'DEPT_HEAD') {
+      // Dept head can only delete if they created it AND it belongs to their department
+      if (task.created_by !== req.user.id || task.department_id !== req.user.department_id) {
+        return res.status(403).json({ error: 'Forbidden: You can only delete tasks you created in your department' })
+      }
+
+      await db.query('DELETE FROM tasks WHERE id = ?', [taskId])
+      return res.json({ message: 'Task deleted' })
+    }
+
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
