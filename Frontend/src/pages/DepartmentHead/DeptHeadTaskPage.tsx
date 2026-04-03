@@ -400,52 +400,61 @@ export default function DeptHeadTaskPage({ onLogout }: { onLogout: () => void })
 
         {/* Inline forms */}
         {showTaskForm && (
-          <div className="px-8 py-4 bg-[#0d1117] border-b border-gray-800">
-            <div className="max-w-2xl">
+          <div className="px-8 py-6 bg-[#0d1117] border-b border-gray-800">
+            {/* CHANGED: Removed max-w-2xl to allow full width */}
+            <div className="w-full">
               <h3 className="text-lg font-semibold text-[#4fd1c5] mb-4 flex items-center gap-2">
                 <CheckSquare className="w-4 h-4" /> New Task
               </h3>
-              <form onSubmit={handleTaskSubmit} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleTaskSubmit} className="space-y-4">
+                {/* CHANGED: Increased gap and adjusted columns for better full-width look */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <input
                     placeholder="Task title *" required value={form.title}
                     onChange={e => setForm({ ...form, title: e.target.value })}
-                    className="bg-[#161b22] border border-gray-800 rounded-lg px-3 py-2.5 text-white text-base focus:border-[#4fd1c5] outline-none"
+                    className="md:col-span-2 bg-[#161b22] border border-gray-800 rounded-lg px-4 py-3 text-white text-base focus:border-[#4fd1c5] outline-none"
                   />
                   <select
                     required value={form.assigned_to}
                     onChange={e => setForm({ ...form, assigned_to: e.target.value })}
-                    className="bg-[#161b22] border border-gray-800 rounded-lg px-3 py-2.5 text-white text-base focus:border-[#4fd1c5] outline-none"
+                    className="bg-[#161b22] border border-gray-800 rounded-lg px-4 py-3 text-white text-base focus:border-[#4fd1c5] outline-none"
                   >
                     <option value="">Select member *</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
                 </div>
+
                 <textarea
-                  placeholder="Description (optional)" rows={2} value={form.description}
+                  placeholder="Description (optional)" rows={3} value={form.description}
                   onChange={e => setForm({ ...form, description: e.target.value })}
-                  className="w-full bg-[#161b22] border border-gray-800 rounded-lg px-3 py-2.5 text-white text-base focus:border-[#4fd1c5] outline-none resize-none"
+                  className="w-full bg-[#161b22] border border-gray-800 rounded-lg px-4 py-3 text-white text-base focus:border-[#4fd1c5] outline-none resize-none"
                 />
-                <div className="grid grid-cols-3 gap-3">
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <input
                     type="date" value={form.deadline} min={today}
                     onChange={e => setForm({ ...form, deadline: e.target.value })}
-                    className="bg-[#161b22] border border-gray-800 rounded-lg px-3 py-2.5 text-white text-base focus:border-[#4fd1c5] outline-none"
+                    className="bg-[#161b22] border border-gray-800 rounded-lg px-4 py-3 text-white text-base focus:border-[#4fd1c5] outline-none"
                   />
                   <select
                     value={form.priority}
                     onChange={e => setForm({ ...form, priority: e.target.value })}
-                    className="bg-[#161b22] border border-gray-800 rounded-lg px-3 py-2.5 text-white text-base focus:border-[#4fd1c5] outline-none"
+                    className="bg-[#161b22] border border-gray-800 rounded-lg px-4 py-3 text-white text-base focus:border-[#4fd1c5] outline-none"
                   >
                     <option value="LOW">Low Priority</option>
                     <option value="MEDIUM">Medium Priority</option>
                     <option value="HIGH">High Priority</option>
                   </select>
-                  <button disabled={submitting}
-                    className="bg-[#2d5f5d] hover:bg-[#3a7a77] text-white text-base font-medium rounded-lg transition-colors disabled:opacity-50">
-                    {submitting ? 'Assigning...' : 'Create Task'}
-                  </button>
+
+                  {/* Spacer for 4-column layout or you can make the button wider */}
+                  <div className="md:col-span-2">
+                    <button disabled={submitting}
+                      className="w-full h-full bg-[#2d5f5d] hover:bg-[#3a7a77] text-white text-base font-medium rounded-lg transition-colors disabled:opacity-50 py-3">
+                      {submitting ? 'Assigning...' : 'Create Task'}
+                    </button>
+                  </div>
                 </div>
+
                 {msg && (
                   <div className={`flex items-center gap-2 text-base rounded-lg px-3 py-2.5 ${msg.type === 'success' ? 'bg-green-500/10 border border-green-500/20 text-green-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}>
                     {msg.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
