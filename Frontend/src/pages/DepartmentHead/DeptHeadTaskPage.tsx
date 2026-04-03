@@ -49,7 +49,7 @@ export default function DeptHeadTaskPage({ onLogout }: { onLogout: () => void })
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const [updateModal, setUpdateModal] = useState<{ taskId: number; title: string } | null>(null)
-  const [updateForm, setUpdateForm] = useState({ status: 'PENDING', progress: 0 })
+  const [updateForm, setUpdateForm] = useState({ status: 'PENDING', progress: 0, work_done: '' })
   const [updating, setUpdating] = useState(false)
   const [updateMsg, setUpdateMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -163,7 +163,7 @@ export default function DeptHeadTaskPage({ onLogout }: { onLogout: () => void })
 
   const openUpdateModal = (task: Task) => {
     setUpdateModal({ taskId: task.id, title: task.title })
-    setUpdateForm({ status: task.status, progress: task.progress })
+    setUpdateForm({ status: task.status, progress: task.progress, work_done: '' })
     setUpdateMsg(null)
   }
 
@@ -174,7 +174,7 @@ export default function DeptHeadTaskPage({ onLogout }: { onLogout: () => void })
     try {
       const res = await fetch(`${API_BASE_URL}/api/tasks/${updateModal.taskId}`, {
         method: 'PUT', headers,
-        body: JSON.stringify({ status: updateForm.status, progress: parseInt(String(updateForm.progress)) }),
+        body: JSON.stringify({ status: updateForm.status, progress: updateForm.progress, work_done: updateForm.work_done }),
       })
       if (res.ok) {
         setUpdateMsg({ type: 'success', text: 'Task updated!' })
@@ -316,8 +316,18 @@ export default function DeptHeadTaskPage({ onLogout }: { onLogout: () => void })
                 </select>
               </div>
               <div>
+                <label className="block text-sm text-gray-400 mb-1.5">Action Taken / Work Log</label>
+                <textarea
+                  placeholder="Describe what you did..."
+                  value={updateForm.work_done}
+                  onChange={e => setUpdateForm({ ...updateForm, work_done: e.target.value })}
+                  rows={3}
+                  className="w-full bg-[#0d1117] border border-gray-800 rounded-lg px-3 py-2 text-white focus:border-[#4fd1c5] outline-none resize-none"
+                />
+              </div>
+              <div>
                 <div className="flex justify-between text-sm text-gray-400 mb-2">
-                  <label>Progress</label>
+                  <label>Manual Progress</label>
                   <span className="text-[#4fd1c5] font-medium">{updateForm.progress}%</span>
                 </div>
                 <input

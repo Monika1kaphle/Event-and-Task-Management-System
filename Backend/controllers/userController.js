@@ -78,15 +78,15 @@ async function addDepartment(req, res) {
 }
 
 async function assignTask(req, res) {
-  const { title, description, department_id, assigned_to, due_date } = req.body;
+  const { title, description, department_id, assigned_to, due_date, priority } = req.body;
   if (!title || !department_id) {
     return res.status(400).json({ error: 'Title and department are required' });
   }
   try {
     const [result] = await db.query(
-      `INSERT INTO tasks (title, description, department_id, assigned_to, due_date, status)
-       VALUES (?, ?, ?, ?, ?, 'PENDING')`,
-      [title, description || null, department_id, assigned_to || null, due_date || null]
+      `INSERT INTO tasks (title, description, department_id, assigned_to, due_date, priority, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'PENDING')`,
+      [title, description || null, department_id, assigned_to || null, due_date || null, priority || 'MEDIUM']
     );
     res.status(201).json({ id: result.insertId, title });
   } catch (err) {
@@ -310,6 +310,30 @@ async function getDepartmentMembers(req, res) {
   }
 }
 
+async function updateTask(req, res) {
+  const taskId = req.params.id;
+  const { status, progress, work_done } = req.body;
+
+  try {
+    // We update the task based on the ID passed in the URL
+    const [result] = await db.query(
+      `UPDATE tasks 
+       SET status = ?, progress = ?, work_done = ? 
+       WHERE id = ?`,
+      [status, progress, work_done || null, taskId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.json({ message: 'Task updated successfully' });
+  } catch (err) {
+    console.error('updateTask error:', err);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+}
+
 module.exports = {
   getDashboardData,
   getUsers,
@@ -326,4 +350,5 @@ module.exports = {
   updateUser,
   deleteUser,
   getDepartmentMembers,
+  updateTask,
 };

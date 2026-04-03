@@ -120,7 +120,7 @@ router.post('/', authorizeRoles('ADMIN', 'DEPT_HEAD'), async (req, res) => {
 // PUT update task progress/status
 router.put('/:id', async (req, res) => {
   const taskId = parseInt(req.params.id)
-  const { status, progress, description } = req.body
+  const { status, progress, description, work_done } = req.body
 
   try {
     const [[task]] = await db.query('SELECT * FROM tasks WHERE id = ?', [taskId])
@@ -143,6 +143,7 @@ router.put('/:id', async (req, res) => {
     if (status !== undefined) { updates.push('status = ?'); values.push(status) }
     if (progress !== undefined) { updates.push('progress = ?'); values.push(progress) }
     if (description !== undefined) { updates.push('description = ?'); values.push(description) }
+    if (work_done !== undefined) { updates.push('work_done = ?'); values.push(work_done || null) }
 
     if (updates.length === 0) return res.status(400).json({ error: 'Nothing to update' })
     values.push(taskId)

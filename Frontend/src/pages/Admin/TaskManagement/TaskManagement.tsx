@@ -14,6 +14,7 @@ interface Task {
   assigned_to_name: string
   department_name: string
   created_by_name: string
+  work_done?: string
 }
 
 interface Department { 
@@ -357,6 +358,18 @@ export function TaskManagement({ onLogout }: { onLogout: () => void }) {
                           style={{ width: `${task.progress ?? 0}%` }}
                         />
                       </div>
+                    </div>
+
+                    {/* Work Log / Latest Update */}
+                    <div className="mt-3 p-3 bg-[#0d1117] rounded border border-gray-800">
+                      <p className="text-xs text-gray-500 uppercase font-bold mb-1">Latest Update from Assignee:</p>
+                      <p className="text-sm text-gray-300">
+                        {task.work_done ? (
+                          task.work_done
+                        ) : (
+                          <span className="italic text-gray-600">No notes provided yet.</span>
+                        )}
+                      </p>
                     </div>
                   </div>
                 </div>
