@@ -18,8 +18,12 @@ interface Task {
 }
 
 interface Department { 
-  id: number; 
-  name: string 
+  id: number
+  name: string
+  display_name?: string
+  event_id?: number | null
+  event_title?: string | null
+  type?: string
 }
 
 interface User {
@@ -62,7 +66,7 @@ export function TaskManagement({ onLogout }: { onLogout: () => void }) {
     try {
       const [tasksRes, deptsRes, usersRes] = await Promise.all([
         fetch('http://localhost:3000/api/tasks', { headers }),
-        fetch('http://localhost:3000/api/departments', { headers }),
+        fetch('http://localhost:3000/api/departments/all-with-events', { headers }),
         fetch('http://localhost:3000/api/users', { headers }),
       ])
       
@@ -213,7 +217,7 @@ export function TaskManagement({ onLogout }: { onLogout: () => void }) {
                     className="w-full bg-[#0d1117] border border-gray-800 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#4fd1c5]"
                   >
                     <option value="">Select department</option>
-                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    {departments.map(d => <option key={d.id} value={d.id}>{d.display_name || d.name}</option>)}
                   </select>
                 </div>
                 <div>

@@ -8,9 +8,8 @@ import { Button } from '../ui/Button'
 export function AssignTaskCard() {
   const [isLoading, setIsLoading] = useState(false)
   const [dbDepartments, setDbDepartments] = useState<{ value: string; label: string }[]>([])
-  const [dbHeads, setDbHeads] = useState<{ value: string; label: string }[]>([])
-  // Added to store the full department objects for head_id lookup
-  const [rawDepartments, setRawDepartments] = useState<any[]>([])
+  const [departmentHeads, setDepartmentHeads] = useState<{ [key: string]: { id: string; name: string } }>({}) // Map of dept_id → head info
+  const [selectedDeptHeadName, setSelectedDeptHeadName] = useState<string>('')
   
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -19,7 +18,7 @@ export function AssignTaskCard() {
 
   const [taskData, setTaskData] = useState({
     department_id: '',
-    assigned_to_id: '',
+    assigned_to: '',
     title: '',
     description: '',
     deadline: ''
@@ -28,23 +27,36 @@ export function AssignTaskCard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const deptRes = await fetch('http://localhost:3000/api/admin/departments')
+        const deptRes = await fetch('http://localhost:3000/api/departments/all-with-events')
         if (deptRes.ok) {
           const data = await deptRes.json()
-          setRawDepartments(data) // Store the full data (including head_id)
+          console.log('🏢 All departments and events fetched:', data)
+          // Include everything: general departments, event-specific departments, and bare events
           setDbDepartments(data.map((d: any) => ({ 
             value: d.id.toString(), 
-            label: d.name 
+            label: d.display_name || d.name 
           })))
         }
 
         const userRes = await fetch('http://localhost:3000/api/admin/users')
         if (userRes.ok) {
           const data = await userRes.json()
-          setDbHeads(data.map((u: any) => ({ 
-            value: u.id.toString(), 
-            label: u.name 
-          })))
+          console.log('👥 All users fetched:', data)
+          
+          // Create a map of department_id → department head
+          const deptHeadsMap: { [key: string]: { id: string; name: string } } = {}
+          data.forEach((user: any) => {
+            if (user.role === 'DEPT_HEAD' && user.department_id) {
+              deptHeadsMap[user.department_id.toString()] = {
+                id: user.id.toString(),
+                name: user.name
+              }
+              console.log(`📌 Dept ${user.department_id} → Head: ${user.name}`)
+            }
+          })
+          
+          console.log('✅ Department Heads Map:', deptHeadsMap)
+          setDepartmentHeads(deptHeadsMap)
         }
       } catch (err) {
         console.error("Failed to load departments or users:", err)
@@ -68,16 +80,28 @@ export function AssignTaskCard() {
     }
   }, [errorMessage])
 
-  // New function to handle automatic head selection when department changes
+  // When department is selected, auto-populate with that department's head
   const handleDepartmentChange = (deptId: string) => {
-    const selectedDept = rawDepartments.find(d => d.id.toString() === deptId)
+    console.log('🏢 Department selected:', deptId)
     
-    setTaskData({ 
-      ...taskData, 
-      department_id: deptId,
-      // Automatically set the assigned_to_id if the department has a head_id in the DB
-      assigned_to_id: selectedDept?.head_id ? selectedDept.head_id.toString() : '' 
-    })
+    const head = departmentHeads[deptId]
+    if (head) {
+      console.log('✅ Found department head:', head.name, '(ID:', head.id, ')')
+      setTaskData({ 
+        ...taskData, 
+        department_id: deptId,
+        assigned_to: head.id
+      })
+      setSelectedDeptHeadName(head.name)
+    } else {
+      console.log('⚠️ No department head found for dept:', deptId)
+      setTaskData({ 
+        ...taskData, 
+        department_id: deptId,
+        assigned_to: ''
+      })
+      setSelectedDeptHeadName('')
+    }
   }
 
   const handleChange = (field: string, value: string) => {
@@ -88,6 +112,25 @@ export function AssignTaskCard() {
     e.preventDefault()
     setIsLoading(true)
     setErrorMessage('')
+
+    // Validation
+    if (!taskData.department_id) {
+      setErrorMessage('Please select a department')
+      setIsLoading(false)
+      return
+    }
+
+    if (!taskData.title) {
+      setErrorMessage('Please enter a task title')
+      setIsLoading(false)
+      return
+    }
+
+    if (!taskData.assigned_to) {
+      setErrorMessage('Department has no head assigned')
+      setIsLoading(false)
+      return
+    }
 
     try {
       const response = await fetch('http://localhost:3000/api/admin/assign-task', {
@@ -100,7 +143,8 @@ export function AssignTaskCard() {
 
       if (response.ok) {
         setSuccessMessage('Task Assigned Successfully!')
-        setTaskData({ department_id: '', assigned_to_id: '', title: '', description: '', deadline: '' })
+        setTaskData({ department_id: '', assigned_to: '', title: '', description: '', deadline: '' })
+        setSelectedDeptHeadName('')
       } else {
         setErrorMessage(resJson.error || 'Failed to assign task')
       }
@@ -150,16 +194,19 @@ export function AssignTaskCard() {
           <Select
             label="Department"
             value={taskData.department_id}
-            onChange={(e) => handleDepartmentChange(e.target.value)} // Using the new handler
+            onChange={(e) => handleDepartmentChange(e.target.value)}
             options={dbDepartments}
           />
           
-          <Select
-            label="Department Head"
-            value={taskData.assigned_to_id}
-            onChange={(e) => handleChange('assigned_to_id', e.target.value)}
-            options={dbHeads}
-          />
+          {/* Department Head - Auto-filled, read-only display */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Department Head
+            </label>
+            <div className="w-full bg-[#161b22] border border-gray-800 text-white text-sm rounded-lg px-4 py-3 focus:border-[#2d5f5d]">
+              {selectedDeptHeadName || '—'}
+            </div>
+          </div>
 
           <div className="md:col-span-2">
              <Input 

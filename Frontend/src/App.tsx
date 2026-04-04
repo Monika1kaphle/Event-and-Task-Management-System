@@ -13,7 +13,10 @@ import { PaymentSuccess } from './pages/User/MyBookings/PaymentSuccess'
 import { DepartmentManagement } from './pages/Admin/DepartmentManagement/DepartmentManagement'
 import { SetPasswordPage } from './pages/auth/SetPasswordPages'
 import { DeptHeadDashboard } from './pages/DepartmentHead/DeptHeadDashboard'
-import { DeptHeadMemberPage } from './pages/DepartmentHead/DeptHeadMemberPage';
+import { DeptHeadMemberPage } from './pages/DepartmentHead/DeptHeadMemberPage'
+import { MemberDashboard } from './pages/Member/MemberDashboard'
+import { MemberTasksPage } from './pages/Member/MemberTasksPage'
+import { MemberEventsPage } from './pages/Member/MemberEventsPage';
 
 export default function App() {
   const [user, setUser] = useState<any>(null)
@@ -166,15 +169,33 @@ export default function App() {
           }
         />
 
-        {/* ── MEMBER ROUTE (placeholder until you build the page) ── */}
+        {/* ── MEMBER ROUTE ── */}
         <Route
           path="/member-dashboard"
           element={
             !isLoggedIn ? <Navigate to="/login" replace /> :
             !isMember   ? <Navigate to="/" replace /> :
-            <div className="min-h-screen bg-[#0d1117] text-white flex items-center justify-center">
-              <p className="text-xl font-semibold text-[#4fd1c5]">Member Dashboard — Coming Soon</p>
-            </div>
+            <MemberDashboard onLogout={handleLogout} />
+          }
+        />
+
+        {/* ── MEMBER TASKS ROUTE ── */}
+        <Route
+          path="/member-tasks"
+          element={
+            !isLoggedIn ? <Navigate to="/login" replace /> :
+            !isMember   ? <Navigate to="/" replace /> :
+            <MemberTasksPage onLogout={handleLogout} />
+          }
+        />
+
+        {/* ── MEMBER EVENTS ROUTE ── */}
+        <Route
+          path="/member-events"
+          element={
+            !isLoggedIn ? <Navigate to="/login" replace /> :
+            !isMember   ? <Navigate to="/" replace /> :
+            <MemberEventsPage onLogout={handleLogout} />
           }
         />
 

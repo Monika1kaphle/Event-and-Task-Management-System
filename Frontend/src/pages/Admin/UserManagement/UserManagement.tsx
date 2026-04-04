@@ -17,6 +17,10 @@ interface User {
 interface Department {
   id: number
   name: string
+  department_name?: string
+  display_name?: string
+  event_id?: number | null
+  event_title?: string | null
 }
 
 interface UserManagementProps {
@@ -59,7 +63,7 @@ export function UserManagement({ onLogout }: UserManagementProps) {
   // Fetch departments for dropdowns
   const fetchDepartments = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/departments', { headers })
+      const res = await fetch('http://localhost:3000/api/departments/all-with-events', { headers })
       if (res.ok) setDepartments(await res.json())
     } catch (err) {
       console.error('Failed to fetch departments', err)
@@ -266,7 +270,7 @@ export function UserManagement({ onLogout }: UserManagementProps) {
                 >
                   <option value="" disabled>Select Department</option>
                   {departments.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.id}>{d.display_name || d.name}</option>
                   ))}
                 </select>
               </div>
@@ -355,7 +359,7 @@ export function UserManagement({ onLogout }: UserManagementProps) {
                 >
                   <option value="" disabled>Select Department</option>
                   {departments.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.id}>{d.display_name || d.name}</option>
                   ))}
                 </select>
               </div>

@@ -33,6 +33,7 @@ export function Sidebar({ onLogout }: SidebarProps) {
   const showDeptMgmt = userRole === 'ADMIN'
   const showEvents = userRole === 'ADMIN'
   const showDeptHeadMenu = userRole === 'DEPT_HEAD'
+  const showMemberMenu = userRole === 'MEMBER'
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#0f1419] border-r border-gray-800 flex flex-col z-50">
@@ -47,14 +48,38 @@ export function Sidebar({ onLogout }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
 
-        {/* Dashboard */}
-        <NavItem
-          icon={LayoutDashboard}
-          label="Dashboard"
-          path="/dashboard"
-          currentPath={location.pathname}
-          onClick={() => navigate('/dashboard')}
-        />
+        {/* Dashboard — Admin Only */}
+        {!showMemberMenu && !showDeptHeadMenu && (
+          <NavItem
+            icon={LayoutDashboard}
+            label="Dashboard"
+            path="/dashboard"
+            currentPath={location.pathname}
+            onClick={() => navigate('/dashboard')}
+          />
+        )}
+
+        {/* Member Dashboard — Member Only */}
+        {showMemberMenu && (
+          <NavItem
+            icon={LayoutDashboard}
+            label="Dashboard"
+            path="/member-dashboard"
+            currentPath={location.pathname}
+            onClick={() => navigate('/member-dashboard')}
+          />
+        )}
+
+        {/* Department Head Dashboard — Dept Head Only */}
+        {showDeptHeadMenu && (
+          <NavItem
+            icon={LayoutDashboard}
+            label="Dashboard"
+            path="/dept-dashboard"
+            currentPath={location.pathname}
+            onClick={() => navigate('/dept-dashboard')}
+          />
+        )}
 
         {/* User Management — Admin Only */}
         {showUserMgmt && (
@@ -157,6 +182,26 @@ export function Sidebar({ onLogout }: SidebarProps) {
               path="/members"
               currentPath={location.pathname}
               onClick={() => navigate('/members')}
+            />
+          </>
+        )}
+
+        {/* Member Menu — Member Only */}
+        {showMemberMenu && (
+          <>
+            <NavItem
+              icon={CheckSquare}
+              label="My Tasks"
+              path="/member-tasks"
+              currentPath={location.pathname}
+              onClick={() => navigate('/member-tasks')}
+            />
+            <NavItem
+              icon={Calendar}
+              label="Events"
+              path="/member-events"
+              currentPath={location.pathname}
+              onClick={() => navigate('/member-events')}
             />
           </>
         )}

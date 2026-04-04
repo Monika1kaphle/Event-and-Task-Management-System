@@ -46,6 +46,15 @@ export function NotificationBell() {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })))
   }
 
+  const markAsRead = async (notificationId: number) => {
+    try {
+      await fetch(`http://localhost:3000/api/notifications/${notificationId}/read`, { method: 'PUT', headers })
+      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: 1 } : n))
+    } catch (err) {
+      console.error('Error marking notification as read:', err)
+    }
+  }
+
   const unread = notifications.filter(n => !n.is_read).length
 
   return (
@@ -80,17 +89,28 @@ export function NotificationBell() {
               notifications.map(n => (
                 <div
                   key={n.id}
-                  className={`px-4 py-3 border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors ${!n.is_read ? 'bg-[#2d5f5d]/5' : ''}`}
+                  className={`px-4 py-3 border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors group ${!n.is_read ? 'bg-[#2d5f5d]/5' : ''}`}
                 >
-                  <div className="flex items-start gap-2">
-                    {!n.is_read && <span className="w-2 h-2 rounded-full bg-[#4fd1c5] flex-shrink-0 mt-1.5" />}
-                    <div className={!n.is_read ? '' : 'pl-4'}>
-                      <p className="text-xs font-semibold text-white mb-0.5">{n.title}</p>
-                      <p className="text-xs text-gray-400 leading-relaxed">{n.message}</p>
-                      <p className="text-[10px] text-gray-600 mt-1">
-                        {new Date(n.created_at).toLocaleDateString()}
-                      </p>
+                  <div className="flex items-start gap-2 justify-between">
+                    <div className="flex items-start gap-2 flex-1">
+                      {!n.is_read && <span className="w-2 h-2 rounded-full bg-[#4fd1c5] flex-shrink-0 mt-1.5" />}
+                      <div className={!n.is_read ? '' : 'pl-4'}>
+                        <p className="text-xs font-semibold text-white mb-0.5">{n.title}</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">{n.message}</p>
+                        <p className="text-[10px] text-gray-600 mt-1">
+                          {new Date(n.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
+                    {!n.is_read && (
+                      <button
+                        onClick={() => markAsRead(n.id)}
+                        className="ml-2 px-2 py-1 text-[10px] text-[#4fd1c5] hover:bg-[#4fd1c5]/20 rounded opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap"
+                        title="Mark as read"
+                      >
+                        Mark read
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

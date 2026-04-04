@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
   role ENUM('ADMIN','DEPT_HEAD','MEMBER','CLIENT') NOT NULL DEFAULT 'CLIENT',
-  status ENUM('active','inactive') NOT NULL DEFAULT 'active',
+  status ENUM('active','inactive','Pending OTP') NOT NULL DEFAULT 'active',
   department_id INT,
   role_title VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -31,13 +31,14 @@ CREATE TABLE IF NOT EXISTS tasks (
   title VARCHAR(255) NOT NULL,
   description TEXT,
   priority ENUM('LOW','MEDIUM','HIGH') DEFAULT 'MEDIUM',
-  start_date DATE, -- Optional based on your form
-  deadline DATE,
+  start_date DATE,
+  due_date DATE,
   status ENUM('PENDING','IN_PROGRESS','COMPLETED','OVERDUE') DEFAULT 'PENDING',
   progress INT DEFAULT 0,
+  work_done TEXT,
   department_id INT,
-  assigned_to INT NOT NULL, -- The user (Department Head/Member) assigned to the task
-  created_by INT, -- Admin or Department Head who created the task
+  assigned_to INT NOT NULL,
+  created_by INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE,
   FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE CASCADE,
@@ -51,6 +52,10 @@ CREATE TABLE IF NOT EXISTS events (
   event_date DATE NOT NULL,
   event_time TIME,
   description TEXT,
+  poster_url VARCHAR(255),
+  price DECIMAL(10, 2) DEFAULT 0,
+  location VARCHAR(255),
+  max_capacity INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

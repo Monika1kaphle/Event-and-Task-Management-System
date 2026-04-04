@@ -3,7 +3,7 @@ const router = express.Router()
 const { loginRequired, attachUser } = require('../middleware/auth')
 const { authorizeRoles } = require('../middleware/roles')
 const db = require('../config/db')
-const { sendTaskAssignmentEmail } = require('../services/emailService')
+const { sendTaskAssignmentEmail, sendTaskUpdateEmail } = require('../services/emailService')
 
 router.use(loginRequired, attachUser)
 
@@ -163,10 +163,30 @@ router.put('/:id', async (req, res) => {
       // Notify dept head if updater is member
       if (req.user.role === 'MEMBER') {
         const [[deptHead]] = await db.query(
-          "SELECT id FROM users WHERE role = 'DEPT_HEAD' AND department_id = ? LIMIT 1",
+          "SELECT id, email, name FROM users WHERE role = 'DEPT_HEAD' AND department_id = ? LIMIT 1",
           [task.department_id]
         )
-        if (deptHead) await notify(deptHead.id, notifTitle, notifMsg, notifType, taskId)
+        if (deptHead) {
+          // Send in-app notification
+          await notify(deptHead.id, notifTitle, notifMsg, notifType, taskId)
+          
+          // Send email notification
+          try {
+            if (deptHead.email) {
+              await sendTaskUpdateEmail(
+                deptHead.email,
+                deptHead.name,
+                req.user.name,
+                task.title,
+                status || task.status,
+                progress ?? task.progress,
+                work_done || ''
+              )
+            }
+          } catch (emailErr) {
+            console.error('Email sending error:', emailErr.message)
+          }
+        }
       }
     }
 

@@ -27,7 +27,7 @@ router.post('/send-otp', async (req, res) => {
     }
 
     // ── Pending OTP (dept head / member invited by Admin): OTP already in their inbox ──
-    if (user.status === 'pending_otp') {
+    if (user.status === 'Pending OTP') {
       return res.json({ message: 'OTP sent. Please enter the code from your invitation email.' });
     }
 
@@ -80,7 +80,7 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     // ── Dept head / member invited by admin: must set password first ──
-    if (user.status === 'pending_otp') {
+    if (user.status === 'Pending OTP') {
       const tempToken = jwt.sign(
         { id: user.id, email: user.email, step: 'set-password' },
         process.env.JWT_SECRET,

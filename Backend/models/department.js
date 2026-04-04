@@ -1,6 +1,17 @@
 const pool = require('../config/db');
 
 async function createDepartment(name, head_id, event_id = null) {
+  // Validation: Check if this head_id is already assigned to another department
+  const [existingDept] = await pool.query(
+    'SELECT id, name FROM departments WHERE head_id = ?',
+    [head_id]
+  );
+  
+  if (existingDept.length > 0) {
+    const existingName = existingDept[0].name;
+    throw new Error(`This department head is already assigned to the "${existingName}" department. Each department head can only manage one department.`);
+  }
+  
   const [result] = await pool.query(
     'INSERT INTO departments (name, head_id, event_id) VALUES (?, ?, ?)',
     [name, head_id, event_id || null]
@@ -29,6 +40,8 @@ async function getDepartmentProgress() {
     FROM departments d
     LEFT JOIN tasks t ON d.id = t.department_id
     GROUP BY d.id
+    ORDER BY (SUM(CASE WHEN t.status = 'COMPLETED' THEN 1 ELSE 0 END) / COUNT(t.id)) DESC
+    LIMIT 5
   `;
   const [rows] = await pool.query(sql);
   return rows.map(row => ({

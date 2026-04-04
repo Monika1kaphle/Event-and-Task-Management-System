@@ -9,7 +9,8 @@ import {
   ChevronDown, 
   User, 
   LogOut,
-  TrendingUp
+  TrendingUp,
+  X
 } from 'lucide-react'
 import { 
   LineChart, 
@@ -66,6 +67,7 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
   const [loading, setLoading] = useState(true)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
   const token = localStorage.getItem('token')
   const userStr = localStorage.getItem('user')
@@ -130,6 +132,30 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
   }, [])
 
   const unreadNotifications = notifications.filter(n => !n.is_read)
+
+  const markAsRead = async (notificationId: number) => {
+    try {
+      await fetch(`http://localhost:3000/api/notifications/${notificationId}/read`, { 
+        method: 'PUT', 
+        headers 
+      })
+      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n))
+    } catch (err) {
+      console.error('Error marking notification as read:', err)
+    }
+  }
+
+  const markAllRead = async () => {
+    try {
+      await fetch('http://localhost:3000/api/notifications/read-all', { 
+        method: 'PUT', 
+        headers 
+      })
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+    } catch (err) {
+      console.error('Error marking all as read:', err)
+    }
+  }
 
   // Overview Stats (Department Wide)
   const totalTasks = tasks.length
@@ -209,17 +235,40 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
         {showNotifications && (
           <div className="fixed top-24 right-8 w-96 bg-[#161b22] border border-[#4fd1c5]/20 rounded-xl shadow-2xl z-40 max-h-[500px] overflow-y-auto animate-in slide-in-from-right-4 duration-200">
             <div className="p-6">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                Notifications <span className="text-xs bg-[#4fd1c5]/10 text-[#4fd1c5] px-2 py-0.5 rounded-full">{unreadNotifications.length} New</span>
-              </h3>
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  Notifications <span className="text-xs bg-[#4fd1c5]/10 text-[#4fd1c5] px-2 py-0.5 rounded-full">{unreadNotifications.length} New</span>
+                </h3>
+                {unreadNotifications.length > 0 && (
+                  <button
+                    onClick={markAllRead}
+                    className="text-xs text-[#4fd1c5] hover:text-[#4fd1c5]/80 transition-colors font-medium"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
               <div className="space-y-3">
                 {notifications.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">No recent activity.</p>
                 ) : (
                   notifications.map(notif => (
-                    <div key={notif.id} className={`p-4 rounded-lg border transition-colors ${notif.is_read ? 'bg-transparent border-gray-800/50' : 'bg-[#4fd1c5]/5 border-[#4fd1c5]/20'}`}>
-                      <p className="font-semibold text-sm text-white">{notif.title}</p>
-                      <p className="text-xs text-gray-400 mt-1">{notif.message}</p>
+                    <div key={notif.id} className={`p-4 rounded-lg border transition-colors group ${notif.is_read ? 'bg-transparent border-gray-800/50' : 'bg-[#4fd1c5]/5 border-[#4fd1c5]/20'}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm text-white">{notif.title}</p>
+                          <p className="text-xs text-gray-400 mt-1">{notif.message}</p>
+                        </div>
+                        {!notif.is_read && (
+                          <button
+                            onClick={() => markAsRead(notif.id)}
+                            className="text-[10px] text-[#4fd1c5] hover:text-[#4fd1c5]/80 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all font-medium"
+                            title="Mark as read"
+                          >
+                            Mark read
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}

@@ -55,10 +55,26 @@ export function AddDepartmentCard() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!deptName) return
+    
+    // Validation: Check if department name is provided
+    if (!deptName.trim()) {
+      setErrorMessage('Department name is required')
+      return
+    }
+    
+    // Validation: Check if department head is selected
+    if (!selectedHeadId || selectedHeadId === '') {
+      setErrorMessage('🚫 Department head is REQUIRED! Please select a department head.')
+      return
+    }
+    
     setIsLoading(true)
     setErrorMessage('')
     try {
+      console.log('Sending department creation request:');
+      console.log('  name:', deptName);
+      console.log('  head_id:', selectedHeadId);
+      
       const response = await fetch(
         'http://localhost:3000/api/admin/add-department',
         {
@@ -68,7 +84,7 @@ export function AddDepartmentCard() {
           },
           body: JSON.stringify({
             name: deptName,
-            head_id: selectedHeadId || null,
+            head_id: selectedHeadId,
           }),
         },
       )
@@ -81,6 +97,7 @@ export function AddDepartmentCard() {
         setErrorMessage(data.error || 'Failed to add department')
       }
     } catch (error) {
+      console.error('Error:', error);
       setErrorMessage('Error connecting to server')
     } finally {
       setIsLoading(false)
@@ -241,7 +258,7 @@ export function AddDepartmentCard() {
               style={{ colorScheme: 'dark' }}
             >
               <option value="" style={{ backgroundColor: '#0f1419', color: '#9ca3af' }}>
-                {users.length === 0 ? 'No Heads Found' : 'Select Head (Optional)'}
+                {users.length === 0 ? 'No Heads Found' : 'Select Department Head *'}
               </option>
               {users.map((user) => (
                 <option key={user.id} value={user.id} style={{ backgroundColor: '#0f1419', color: '#d1d5db' }}>
@@ -256,7 +273,7 @@ export function AddDepartmentCard() {
             </div>
           </div>
 
-          <Button type="submit" fullWidth isLoading={isLoading} disabled={!deptName} className="mt-2">
+          <Button type="submit" fullWidth isLoading={isLoading} disabled={!deptName || !selectedHeadId} className="mt-2">
             <Plus className="h-4 w-4 mr-2" />
             Add Department
           </Button>

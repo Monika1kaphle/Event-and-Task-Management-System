@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
+const { getDepartmentProgress } = require('../models/department');
 const db = require('../config/db');
 const { sendOTPEmail } = require('../services/emailService');
 
@@ -11,11 +12,14 @@ async function getDashboardData(req, res) {
     const [[eventCount]] = await db.query('SELECT COUNT(*) as count FROM events')
     const [[deptCount]] = await db.query('SELECT COUNT(*) as count FROM departments')
     const [[taskCount]] = await db.query('SELECT COUNT(*) as count FROM tasks')
+    const departmentProgress = await getDepartmentProgress()
+    
     res.json({
       totalUsers: userCount.count,
       totalEvents: eventCount.count,
       totalDepartments: deptCount.count,
       totalTasks: taskCount.count,
+      departmentProgress: departmentProgress,
     })
   } catch (err) {
     console.error('getDashboardData error:', err)
@@ -28,8 +32,10 @@ async function getUsers(req, res) {
     const [rows] = await db.query(
       'SELECT id, name, email, role, status, department_id, role_title, created_at FROM users'
     )
+    console.log('👥 Users fetched from DB:', rows.map(u => ({ id: u.id, name: u.name, role: u.role, department_id: u.department_id })))
     res.json(rows)
   } catch (err) {
+    console.error('Error fetching users:', err)
     res.status(500).json({ error: 'Failed to fetch users' })
   }
 }
@@ -37,19 +43,34 @@ async function getUsers(req, res) {
 async function getDepartments(req, res) {
   try {
     const [rows] = await db.query('SELECT * FROM departments WHERE event_id IS NULL')
+    console.log('📊 Departments fetched from DB:', rows.map(d => ({ id: d.id, name: d.name, head_id: d.head_id })))
     res.json(rows)
   } catch (err) {
+    console.error('Error fetching departments:', err)
     res.status(500).json({ error: 'Failed to fetch departments' })
   }
 }
 
 async function addDepartment(req, res) {
   const { name, head_id } = req.body
-  if (!name) return res.status(400).json({ error: 'Department name required' })
+  
+  // Validation: Department name is required
+  if (!name || !name.trim()) {
+    console.log('❌ VALIDATION FAILED: Department name is required');
+    return res.status(400).json({ error: 'Department name required' })
+  }
+  
+  // Validation: Department head is required
+  if (!head_id || head_id === '') {
+    console.log('❌ VALIDATION FAILED: Department head is required');
+    return res.status(400).json({ error: 'Department head is required. Please select a department head.' })
+  }
+  
   try {
+    console.log('✅ Adding department:', { name, head_id });
     const [result] = await db.query(
       'INSERT INTO departments (name, head_id) VALUES (?, ?)',
-      [name, head_id || null]
+      [name, head_id]
     )
 
     if (head_id) {
@@ -73,24 +94,31 @@ async function addDepartment(req, res) {
 
     res.status(201).json({ id: result.insertId, name, head_id: head_id || null })
   } catch (err) {
+    console.error('❌ Error adding department:', err);
     res.status(500).json({ error: 'Failed to add department' })
   }
 }
 
 async function assignTask(req, res) {
-  const { title, description, department_id, assigned_to, due_date } = req.body
+  const { title, description, department_id, assigned_to, deadline } = req.body
+  console.log('📝 Task assignment request:', { title, description, department_id, assigned_to, deadline })
+  
   if (!title || !department_id) {
+    console.log('❌ Validation failed: Missing title or department_id')
     return res.status(400).json({ error: 'Title and department are required' })
   }
+  
   try {
     const [result] = await db.query(
-      `INSERT INTO tasks (title, description, department_id, assigned_to, due_date, status)
+      `INSERT INTO tasks (title, description, department_id, assigned_to, deadline, status)
        VALUES (?, ?, ?, ?, ?, 'PENDING')`,
-      [title, description || null, department_id, assigned_to || null, due_date || null]
+      [title, description || null, department_id, assigned_to || null, deadline || null]
     )
+    console.log('✅ Task created successfully:', result.insertId)
     res.status(201).json({ id: result.insertId, title })
   } catch (err) {
-    res.status(500).json({ error: 'Failed to assign task' })
+    console.error('❌ Task assignment error:', err)
+    res.status(500).json({ error: 'Failed to assign task: ' + err.message })
   }
 }
 

@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import { Sidebar } from '../../components/layout/Sidebar'
 import {
   Plus, Trash2, Loader2, CheckCircle, XCircle,
-  User, Users, Clock, AlertCircle, CheckSquare
+  User, Users, Clock, AlertCircle, CheckSquare, MessageCircle
 } from 'lucide-react'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
@@ -21,6 +21,7 @@ interface Task {
   department_id: number
   department_name: string
   created_by_name: string
+  work_done?: string
 }
 
 interface TeamMember {
@@ -253,8 +254,14 @@ export default function DeptHeadTaskPage({ onLogout }: { onLogout: () => void })
               Update
             </button>
           )}
-          {!canUpdate && (
-            <span className="text-xs text-gray-600 italic">Member updates</span>
+          {!canUpdate && task.work_done && (
+            <span className="flex items-center gap-1 text-xs text-[#4fd1c5] font-semibold px-2 py-1 bg-[#4fd1c5]/10 rounded-full">
+              <MessageCircle className="w-3 h-3" />
+              Updates
+            </span>
+          )}
+          {!canUpdate && !task.work_done && (
+            <span className="text-xs text-gray-600 italic">Pending updates</span>
           )}
           <button
             onClick={() => handleDelete(task.id)}
@@ -278,6 +285,17 @@ export default function DeptHeadTaskPage({ onLogout }: { onLogout: () => void })
           />
         </div>
       </div>
+
+      {/* Member Update/Comments Section */}
+      {!canUpdate && task.work_done && (
+        <div className="mt-4 p-3 bg-[#0a0e13] border border-gray-700 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageCircle className="w-4 h-4 text-[#4fd1c5]" />
+            <p className="text-xs font-semibold text-gray-400">Latest update from assignee:</p>
+          </div>
+          <p className="text-sm text-gray-300 whitespace-pre-wrap">{task.work_done}</p>
+        </div>
+      )}
     </div>
   )
 
