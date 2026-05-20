@@ -22,6 +22,8 @@ export function DeptHeadMemberPage({ onLogout }: DeptHeadMemberPageProps) {
   });
 
   const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
   const headers = { 
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}` 
@@ -81,6 +83,33 @@ export function DeptHeadMemberPage({ onLogout }: DeptHeadMemberPageProps) {
     }
   };
 
+  const handleRemoveMember = async (memberId: number, memberName: string) => {
+    if (memberId === user?.id) {
+      alert('You cannot remove yourself from the department');
+      return;
+    }
+    
+    if (confirm(`Are you sure you want to remove ${memberName} from the department? This action cannot be undone.`)) {
+      try {
+        const response = await fetch(`http://localhost:3000/api/users/${memberId}`, {
+          method: 'DELETE',
+          headers,
+        });
+
+        if (response.ok) {
+          alert(`${memberName} has been removed successfully.`);
+          fetchMembers(); // Refresh list
+        } else {
+          const data = await response.json();
+          alert(data.error || 'Failed to remove member');
+        }
+      } catch (err) {
+        console.error('Error removing member:', err);
+        alert('Error connecting to server');
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f1419] text-white flex overflow-hidden">
       {/* Sidebar - Fixed Width */}
@@ -134,7 +163,16 @@ export function DeptHeadMemberPage({ onLogout }: DeptHeadMemberPageProps) {
                 </div>
               </div>
 
-              <button className="w-full py-2 bg-red-500/5 text-red-500/70 border border-red-500/10 rounded-lg hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 text-sm font-medium">
+              <button 
+                onClick={() => handleRemoveMember(member.id, member.name)}
+                disabled={member.id === user?.id}
+                title={member.id === user?.id ? "You cannot remove yourself" : "Remove this member"}
+                className={`w-full py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all ${
+                  member.id === user?.id
+                    ? 'bg-red-500/5 text-red-500/40 border border-red-500/10 cursor-not-allowed opacity-50'
+                    : 'bg-red-500/5 text-red-500/70 border border-red-500/10 hover:bg-red-500 hover:text-white'
+                }`}
+              >
                 <Trash2 size={14} /> Remove Member
               </button>
             </div>

@@ -287,6 +287,25 @@ async function updateUser(req, res) {
 
 async function deleteUser(req, res) {
   const id = parseInt(req.params.id, 10);
+  
+  // Authorization: ADMIN can delete anyone, but DEPT_HEAD can only delete members from their department
+  if (req.user.role === 'DEPT_HEAD') {
+    try {
+      // Check if the user to be deleted is in the same department
+      const [userToDelete] = await db.query('SELECT department_id FROM users WHERE id = ?', [id]);
+      if (userToDelete.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // DEPT_HEAD can only delete if both are in the same department
+      if (userToDelete[0].department_id !== req.user.department_id) {
+        return res.status(403).json({ error: 'You can only remove members from your own department' });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: 'Authorization check failed' });
+    }
+  }
+  
   try {
     // Note: Using direct delete as per your original file
     await db.query('DELETE FROM users WHERE id = ?', [id]);

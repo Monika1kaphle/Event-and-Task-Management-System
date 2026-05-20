@@ -101,6 +101,31 @@ async function verifyOTP(email, otpCode) {
   return false;
 }
 
+// ─── PASSWORD RESET ───
+
+async function savePasswordResetToken(email, resetToken) {
+  const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour expiry
+  await pool.query(
+    'UPDATE users SET password_reset_token = ?, reset_token_expires = ? WHERE email = ?',
+    [resetToken, expiresAt, email]
+  );
+}
+
+async function verifyPasswordResetToken(email, resetToken) {
+  const [rows] = await pool.query(
+    'SELECT * FROM users WHERE email = ? AND password_reset_token = ? AND reset_token_expires > NOW()',
+    [email, resetToken]
+  );
+  return rows.length > 0 ? rows[0] : null;
+}
+
+async function clearPasswordResetToken(userId) {
+  await pool.query(
+    'UPDATE users SET password_reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+    [userId]
+  );
+}
+
 module.exports = {
   createUser, 
   createMember,
@@ -113,5 +138,8 @@ module.exports = {
   incrementLoginAttempts,
   resetLoginAttempts, 
   saveOTP, 
-  verifyOTP
+  verifyOTP,
+  savePasswordResetToken,
+  verifyPasswordResetToken,
+  clearPasswordResetToken
 };

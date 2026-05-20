@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const { sendOTPEmail, sendLoginOTPEmail } = require('../services/emailService');
+const { getGoogleAuthUrl, handleGoogleCallback } = require('../controllers/googleAuthController');
+const { loginRequired, attachUser } = require('../middleware/auth');
 
 /**
  * 1. POST /api/auth/send-otp
@@ -192,4 +194,167 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Login failed.' })
   }
 })
+
+// 4. POST /api/auth/forgot-password
+// User requests password reset by providing their email
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const user = await User.findByEmail(email);
+    if (!user) {
+      // Don't reveal if email exists for security
+      return res.json({ message: 'If an account exists with this email, a password reset link has been sent.' });
+    }
+
+    // Generate a unique reset token
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Save reset token to database
+    await User.savePasswordResetToken(email, resetToken);
+
+    // Send reset email
+    const { sendPasswordResetEmail } = require('../services/emailService');
+    await sendPasswordResetEmail(email, resetToken);
+
+    console.log(`[Password Reset] Reset link sent to: ${email}`);
+
+    res.json({ message: 'If an account exists with this email, a password reset link has been sent.' });
+  } catch (err) {
+    console.error('forgot-password error:', err);
+    res.status(500).json({ error: 'Failed to process password reset request.' });
+  }
+});
+
+// 5. POST /api/auth/reset-password
+// User submits new password using the reset token
+router.post('/reset-password', async (req, res) => {
+  const { email, resetToken, password } = req.body;
+
+  if (!email || !resetToken || !password) {
+    return res.status(400).json({ error: 'Email, reset token, and password are required' });
+  }
+
+  try {
+    // Verify the reset token
+    const user = await User.verifyPasswordResetToken(email, resetToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid or expired reset token.' });
+    }
+
+    // Hash the new password
+    const hashed = await bcrypt.hash(password, 10);
+
+    // Update password and clear reset token
+    await User.updateUser(user.id, { password: hashed });
+    await User.clearPasswordResetToken(user.id);
+
+    console.log(`[Password Reset] Password updated for: ${email}`);
+
+    res.json({ message: 'Password has been successfully reset. You can now login with your new password.' });
+  } catch (err) {
+    console.error('reset-password error:', err);
+    res.status(500).json({ error: 'Failed to reset password.' });
+  }
+});
+
+// 6. POST /api/auth/change-password
+// Authenticated user changes their current password
+
+router.post('/change-password', loginRequired, attachUser, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current and new passwords are required' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      return res.status(401).json({ message: 'Incorrect current password' });
+    }
+
+    // Hash new password
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await User.updateUser(userId, { password: hashed });
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (err) {
+    console.error('change-password error:', err);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// 7. PUT /api/auth/profile
+// Update authenticated user's profile information (name, email, etc.)
+router.put('/profile', loginRequired, attachUser, async (req, res) => {
+  const { name, email } = req.body;
+  const userId = req.user.id;
+
+  if (!name && !email) {
+    return res.status(400).json({ error: 'At least one field is required' });
+  }
+
+  try {
+    const updateFields = {};
+    
+    if (name && name.trim()) {
+      updateFields.name = name.trim();
+    }
+    
+    if (email) {
+      // Check if new email is already in use by someone else
+      const existingUser = await User.findByEmail(email);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ error: 'Email is already in use' });
+      }
+      updateFields.email = email;
+    }
+
+    const updatedUser = await User.updateUser(userId, updateFields);
+    
+    res.json({ 
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        department_id: updatedUser.department_id
+      }
+    });
+  } catch (err) {
+    console.error('update-profile error:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// ── GOOGLE OAUTH ──
+
+// GET /api/auth/google-auth-url
+// Returns the Google OAuth URL for frontend to redirect to
+router.get('/google-auth-url', getGoogleAuthUrl);
+
+// POST /api/auth/google/callback
+// Handles Google OAuth callback - exchanges code for token
+router.post('/google/callback', handleGoogleCallback);
+
 module.exports = router;

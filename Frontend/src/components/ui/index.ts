@@ -1,2 +1,6 @@
 export { Button } from './Button'
 export { Input } from './Input'
+export { ProfileDropdown } from './ProfileDropdown'
+export { ProfileModal } from './ProfileModal'
+export { ChangePasswordModal } from './ChangePasswordModal'
+export { ForgotPasswordModal } from './ForgotPasswordModal'

@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useEffect, useState } from 'react'
 
 import { LoginPage } from './pages/auth/LoginPage'
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage'
+import { GoogleCallbackPage } from './pages/auth/GoogleCallbackPage'
 import { DashboardPage } from './pages/Admin/Dashboard/DashboardPage'
 import { UserManagement } from './pages/Admin/UserManagement/UserManagement'
 import { EventManagement } from './pages/Admin/EventManagements/EventManagement'
@@ -79,6 +82,42 @@ export default function App() {
         <Route
           path="/set-password"
           element={<SetPasswordPage />}
+        />
+
+        {/* ── FORGOT PASSWORD ── */}
+        <Route
+          path="/forgot-password"
+          element={
+            !isLoggedIn ? (
+              <ForgotPasswordPage />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        {/* ── RESET PASSWORD ── */}
+        <Route
+          path="/reset-password"
+          element={
+            !isLoggedIn ? (
+              <ResetPasswordPage />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        {/* ── GOOGLE OAUTH CALLBACK ── */}
+        <Route
+          path="/auth/google/callback"
+          element={
+            !isLoggedIn ? (
+              <GoogleCallbackPage onLoginSuccess={handleLoginSuccess} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
         />
 
         {/* ── LEGACY ONBOARDING (keep for backwards compat) ── */}

@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   login_attempts INT DEFAULT 0,
   lock_until DATETIME DEFAULT NULL,
+  password_reset_token VARCHAR(500),
+  reset_token_expires DATETIME,
+  streak_count INT DEFAULT 0,
+  last_login_date DATE,
   FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
 );
 

@@ -413,4 +413,94 @@ const sendTaskUpdateEmail = async (deptHeadEmail, deptHeadName, memberName, task
     return await transporter.sendMail(mailOptions);
 };
 
-module.exports = { sendOTPEmail, sendLoginOTPEmail, sendTaskAssignmentEmail, sendTaskUpdateEmail };
+// ── Password Reset Email ──
+const sendPasswordResetEmail = async (targetEmail, resetToken) => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    const mailOptions = {
+        from: `"E&T System" <${process.env.EMAIL_USER}>`,
+        to: targetEmail,
+        subject: 'Reset Your Password - E&T Management',
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background-color:#0d1117;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0d1117;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#2d5f5d;border-radius:12px;width:44px;height:44px;text-align:center;vertical-align:middle;">
+                    <span style="font-size:22px;color:#ffffff;font-weight:bold;line-height:44px;">E</span>
+                  </td>
+                  <td style="padding-left:10px;vertical-align:middle;">
+                    <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">E&amp;T Management</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#161b22;border:1px solid #30363d;border-radius:16px;padding:36px 32px;">
+
+              <h1 style="margin:0 0 8px 0;font-size:22px;font-weight:700;color:#ffffff;">
+                Reset Your Password 🔐
+              </h1>
+              <p style="margin:0 0 28px 0;font-size:14px;color:#9ca3af;line-height:1.6;">
+                We received a request to reset your password. Click the button below to set a new password.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${resetUrl}"
+                       style="display:inline-block;background-color:#2d5f5d;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:10px;letter-spacing:0.3px;">
+                      Reset Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 20px 0;font-size:12px;color:#9ca3af;text-align:center;">
+                Or copy this link in your browser:<br>
+                <a href="${resetUrl}" style="color:#4fd1c5;word-break:break-all;font-size:11px;">${resetUrl}</a>
+              </p>
+
+              <hr style="border:none;border-top:1px solid #30363d;margin:0 0 20px 0;">
+
+              <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.6;">
+                ⏱ This link is valid for <strong style="color:#9ca3af;">1 hour</strong>.
+                If you did not request a password reset, you can safely ignore this email or contact support.
+              </p>
+
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding-top:20px;">
+              <p style="margin:0;font-size:11px;color:#4b5563;">
+                © ${new Date().getFullYear()} E&amp;T Management System. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `
+    };
+
+    return await transporter.sendMail(mailOptions);
+};
+
+module.exports = { sendOTPEmail, sendLoginOTPEmail, sendTaskAssignmentEmail, sendTaskUpdateEmail, sendPasswordResetEmail };

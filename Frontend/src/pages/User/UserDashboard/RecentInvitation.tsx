@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Mail, Users, CalendarDays, Clock, MapPin } from 'lucide-react'
-import { Button } from '../../../components/ui/Button'
+import { Mail, Users, CalendarDays, Clock, MapPin, Star } from 'lucide-react'
 
 interface RecentInvitationsCardProps {
   onBookEvent?: () => void
@@ -8,58 +7,47 @@ interface RecentInvitationsCardProps {
 
 export function RecentInvitationsCard({ onBookEvent }: RecentInvitationsCardProps) {
   const [events, setEvents] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [bookingId, setBookingId] = useState<number | null>(null)
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:3000/api/client/events', {
+        
+        // Fetch events
+        const eventResponse = await fetch('http://localhost:3000/api/client/events', {
           headers: { Authorization: `Bearer ${token}` }
         })
-        if (response.ok) {
-          const data = await response.json()
+        if (eventResponse.ok) {
+          const data = await eventResponse.json()
           // Show only upcoming, max 3
           const upcoming = data
             .filter((e: any) => new Date(e.event_date) >= new Date())
             .slice(0, 3)
           setEvents(upcoming)
         }
+
+        // Fetch notifications for new events
+        const notifResponse = await fetch('http://localhost:3000/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (notifResponse.ok) {
+          const notifData = await notifResponse.json()
+          // Filter for NEW_EVENT notifications
+          const newEventNotifs = notifData.filter((n: any) => n.type === 'NEW_EVENT')
+          setNotifications(newEventNotifs)
+        }
       } catch (err) {
-        console.error('Failed to fetch invitations', err)
+        console.error('Failed to fetch data', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchEvents()
+    fetchData()
   }, [])
 
-  const handleBook = async (eventId: number) => {
-    setBookingId(eventId)
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:3000/api/client/book-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ eventId })
-      })
-      const data = await response.json()
-      if (response.ok) {
-        alert('Booking successful!')
-        onBookEvent?.()
-      } else {
-        alert(data.error || 'Booking failed')
-      }
-    } catch {
-      alert('Could not connect to server')
-    } finally {
-      setBookingId(null)
-    }
-  }
+  const latestNewEvent = notifications.length > 0 ? notifications[0] : null
 
   return (
     <div className="bg-[#161b22]/80 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl hover:border-[#2d5f5d]/30 transition-all duration-300">
@@ -74,6 +62,24 @@ export function RecentInvitationsCard({ onBookEvent }: RecentInvitationsCardProp
           View All Invitations
         </button>
       </div>
+
+      {/* NEW EVENT NOTIFICATION BANNER */}
+      {latestNewEvent && (
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-[#2d5f5d]/20 to-[#4fd1c5]/10 border border-[#4fd1c5]/30 animate-pulse">
+          <div className="flex items-start space-x-3">
+            <div className="p-2 rounded-lg bg-[#4fd1c5]/20 text-[#4fd1c5] mt-0.5">
+              <Star className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[#4fd1c5] mb-1">New Event</p>
+              <p className="text-sm text-gray-300 break-words">{latestNewEvent.message}</p>
+              <p className="text-xs text-gray-500 mt-2">
+                {new Date(latestNewEvent.created_at).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center text-gray-500 py-8">Loading...</div>
@@ -112,17 +118,6 @@ export function RecentInvitationsCard({ onBookEvent }: RecentInvitationsCardProp
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div className="mt-auto">
-                <Button
-                  variant="primary"
-                  className="w-full py-2.5 h-auto text-sm font-semibold"
-                  onClick={() => handleBook(event.id)}
-                  disabled={event.isBooked || bookingId === event.id}
-                >
-                  {event.isBooked ? '✓ Already Booked' : bookingId === event.id ? 'Booking...' : 'Book the Event'}
-                </Button>
               </div>
             </div>
           ))}

@@ -3,10 +3,15 @@ import { UserSidebar } from '../../components/layout/UserSidebar'
 import { BookingStatusCards } from '../User/UserDashboard/BookingStatusCard'
 import { UpcomingBookingsCard } from '../User/UserDashboard/UpcomingBookingsCard'
 import { RecentInvitationsCard } from '../User/UserDashboard/RecentInvitation'
+import { EventInvitationsPage } from '../User/UserDashboard/EventInvitationsPage'
 import { MyBookingsPage } from '../User/MyBookings/Mybookingspage'
 import { Bell, Search } from 'lucide-react'
 import { StreakBadge } from '../../components/ui/StreakBadge'
 import { StreakCelebration } from '../../components/ui/StreakCelebration'
+import { ProfileDropdown } from '../../components/ui/ProfileDropdown'
+import { ProfileModal } from '../../components/ui/ProfileModal'
+import { ChangePasswordModal } from '../../components/ui/ChangePasswordModal'
+import { ForgotPasswordModal } from '../../components/ui/ForgotPasswordModal'
 
 interface UserDashboardPageProps {
   onLogout: () => void
@@ -20,9 +25,14 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
     upcomingCount: 0,
   })
   const [userName, setUserName] = useState('User')
+  const [userEmail, setUserEmail] = useState('')
+  const [userRole, setUserRole] = useState('CLIENT')
   const [userInitials, setUserInitials] = useState('US')
   const [streak, setStreak] = useState(0)
   const [showCelebration, setShowCelebration] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false)
 
   const streakCalled = useRef(false)
 
@@ -41,6 +51,12 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
           const parts = savedUser.name.trim().split(' ')
           const initials = parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : parts[0].slice(0, 2)
           setUserInitials(initials.toUpperCase())
+        }
+        if (savedUser.email) {
+          setUserEmail(savedUser.email)
+        }
+        if (savedUser.role) {
+          setUserRole(savedUser.role)
         }
 
         if (!streakCalled.current) {
@@ -78,6 +94,26 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
 
   const handleNavigateToBookings = () => setActiveItem('My Bookings')
 
+  const formatRole = (role: string) => {
+    const roleMap: Record<string, string> = {
+      'CLIENT': 'User',
+      'ADMIN': 'Administrator',
+      'DEPT_HEAD': 'Dept Head',
+      'MEMBER': 'Member',
+    }
+    return roleMap[role] || role
+  }
+
+  const getRoleBadgeColor = (role: string) => {
+    const colorMap: Record<string, { bg: string; text: string }> = {
+      'CLIENT': { bg: 'bg-blue-950', text: 'text-blue-400' },
+      'ADMIN': { bg: 'bg-red-950', text: 'text-red-400' },
+      'DEPT_HEAD': { bg: 'bg-purple-950', text: 'text-purple-400' },
+      'MEMBER': { bg: 'bg-green-950', text: 'text-green-400' },
+    }
+    return colorMap[role] || { bg: 'bg-gray-800', text: 'text-gray-400' }
+  }
+
   const getPageTitle = () => {
     switch (activeItem) {
       case 'My Bookings': return { title: 'My Bookings', subtitle: 'Your booked events and transactions' }
@@ -107,7 +143,12 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
         {/* HEADER */}
         <header className="flex-shrink-0 bg-[#0f1419]/95 backdrop-blur-sm border-b border-gray-800/50 px-8 py-4 flex justify-between items-center z-10">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+              <span className={`${getRoleBadgeColor(userRole).bg} ${getRoleBadgeColor(userRole).text} px-3 py-1 rounded-full text-xs font-semibold`}>
+                {formatRole(userRole)}
+              </span>
+            </div>
             <p className="text-gray-400 text-sm mt-0.5">{subtitle}</p>
           </div>
 
@@ -134,9 +175,15 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#4fd1c5] shadow-[0_0_8px_#4fd1c5]" />
             </button>
 
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#2d5f5d] to-[#161b22] border border-gray-700 flex items-center justify-center text-sm font-bold">
-              {userInitials}
-            </div>
+            <ProfileDropdown
+              userName={userName}
+              userInitials={userInitials}
+              userRole={userRole}
+              onLogout={onLogout}
+              onOpenProfile={() => setShowProfileModal(true)}
+              onOpenChangePassword={() => setShowChangePasswordModal(true)}
+              onOpenForgotPassword={() => setShowForgotPasswordModal(true)}
+            />
           </div>
         </header>
 
@@ -146,11 +193,7 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
             {activeItem === 'My Bookings' ? (
               <MyBookingsPage />
             ) : activeItem === 'Event Invitations' ? (
-              <div className="flex flex-col items-center justify-center py-32 text-gray-500 space-y-3 bg-[#161b22] rounded-2xl border border-gray-800/50">
-                <Bell className="h-16 w-16 text-gray-800" />
-                <p className="text-lg font-medium text-gray-400">Event Invitations</p>
-                <p className="text-sm">Coming soon...</p>
-              </div>
+              <EventInvitationsPage />
             ) : activeItem === 'User Settings' ? (
               <div className="flex flex-col items-center justify-center py-32 text-gray-500 space-y-3 bg-[#161b22] rounded-2xl border border-gray-800/50">
                 <p className="text-lg font-medium text-gray-400">User Settings</p>
@@ -179,6 +222,25 @@ export function UserDashboardPage({ onLogout }: UserDashboardPageProps) {
           </div>
         </div>
       </main>
+
+      {/* Modals */}
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        userName={userName}
+        userEmail={userEmail}
+        onEditName={(newName) => setUserName(newName)}
+      />
+
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+      />
+
+      <ForgotPasswordModal
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
     </div>
   )
 }

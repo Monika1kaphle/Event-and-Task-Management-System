@@ -27,6 +27,6 @@ router.get('/members/department', authorizeRoles('DEPT_HEAD'), userController.ge
 // --- INDIVIDUAL USER ACTIONS ---
 router.get('/:id', userController.getUser);
 router.put('/:id', userController.updateUser);
-router.delete('/:id', authorizeRoles('ADMIN'), userController.deleteUser);
+router.delete('/:id', authorizeRoles('ADMIN', 'DEPT_HEAD'), userController.deleteUser);
 
 module.exports = router;

@@ -68,6 +68,7 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [departmentName, setDepartmentName] = useState<string>('Department')
 
   const token = localStorage.getItem('token')
   const userStr = localStorage.getItem('user')
@@ -125,7 +126,42 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
     setMemberStats(statsArray)
   }
 
-  useEffect(() => { 
+// Fetch department name from departments where user is head
+  useEffect(() => {
+    const fetchDepartmentName = async () => {
+      try {
+        if (!user?.id) {
+          console.log('❌ No user ID found')
+          return
+        }
+        console.log('🔍 Fetching departments to find one where user is head...')
+        
+        const deptRes = await fetch('http://localhost:3000/api/departments/all-with-events', { headers })
+        if (deptRes.ok) {
+          const allDepts = await deptRes.json()
+          // Filter to only actual departments (not bare events)
+          const departments = allDepts.filter((d: any) => d.type === 'department' || !d.type)
+          
+          // Find department where current user is the head
+          const userDept = departments.find((d: any) => d.head_id === user?.id)
+          
+          if (userDept) {
+            console.log('✅ Found department where user is head:', userDept.name)
+            setDepartmentName(userDept.name)
+          } else {
+            console.log('❌ User is not a head of any department')
+          }
+        } else {
+          console.log('❌ Department fetch failed:', deptRes.status)
+        }
+      } catch (err) {
+        console.error('❌ Error fetching department:', err)
+      }
+    }
+    fetchDepartmentName()
+  }, [token])
+
+  useEffect(() => {
     fetchAll()
     const interval = setInterval(fetchAll, 10000)
     return () => clearInterval(interval)
@@ -177,7 +213,7 @@ export function DeptHeadDashboard({ onLogout }: { onLogout: () => void }) {
             <h1 className="text-4xl font-bold text-white tracking-tight">Department Head Dashboard</h1>
             <p className="text-gray-400 mt-1 flex items-center gap-2">
               <LayoutDashboard size={16} className="text-[#4fd1c5]" />
-              Manage tasks and track team progress for <span className="text-white font-medium">{user?.department || 'Department'}</span>
+              Manage tasks and track team progress for <span className="text-white font-medium">{departmentName}</span>
             </p>
           </div>
 

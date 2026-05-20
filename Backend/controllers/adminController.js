@@ -146,6 +146,28 @@ async function postEvent(req, res) {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [title, event_date, event_time, description, poster_url, price || 0, location || '', max_capacity || null]
     )
+    
+    // Format the notification message
+    const eventDate = new Date(event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    const notificationMessage = `${title} starting ${eventDate}, at ${event_time}, at ${location || 'TBA'}`
+    
+    // Create notifications for all users with MEMBER role
+    try {
+      const [users] = await db.query(`SELECT id FROM users WHERE role = 'MEMBER'`)
+      if (users.length > 0) {
+        for (const user of users) {
+          await db.query(
+            `INSERT INTO notifications (user_id, title, message, type, created_at) 
+             VALUES (?, ?, ?, ?, NOW())`,
+            [user.id, 'New Event', notificationMessage, 'NEW_EVENT']
+          )
+        }
+      }
+    } catch (notifErr) {
+      console.error('Error creating notifications:', notifErr)
+      // Don't fail the event creation if notification creation fails
+    }
+    
     res.status(201).json({ id: result.insertId, title })
   } catch (err) {
     console.error('postEvent error:', err)

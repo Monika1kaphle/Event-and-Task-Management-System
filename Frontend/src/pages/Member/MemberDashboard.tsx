@@ -76,6 +76,7 @@ export function MemberDashboard({ onLogout }: { onLogout: () => void }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [departmentName, setDepartmentName] = useState<string>('Your Department')
 
   const token = localStorage.getItem('token')
   const userStr = localStorage.getItem('user')
@@ -135,6 +136,39 @@ export function MemberDashboard({ onLogout }: { onLogout: () => void }) {
 
     setTaskStats(Object.values(stats))
   }
+
+  // Fetch department name from tasks
+  useEffect(() => {
+    const fetchDepartmentName = async () => {
+      try {
+        if (!user?.id) {
+          console.log('❌ No user ID found')
+          return
+        }
+        console.log('🔍 Fetching user tasks to get department name...')
+        
+        const tasksRes = await fetch('http://localhost:3000/api/tasks', { headers })
+        if (tasksRes.ok) {
+          const allTasks = await tasksRes.json()
+          // Filter tasks assigned to current user
+          const userTasks = allTasks.filter((task: Task) => task.assigned_to === user?.id)
+          
+          // Get department name from first task
+          if (userTasks.length > 0 && userTasks[0].department_name) {
+            console.log('✅ Found department name from tasks:', userTasks[0].department_name)
+            setDepartmentName(userTasks[0].department_name)
+          } else {
+            console.log('❌ No tasks found or department_name not available')
+          }
+        } else {
+          console.log('❌ Tasks fetch failed:', tasksRes.status)
+        }
+      } catch (err) {
+        console.error('❌ Error fetching department:', err)
+      }
+    }
+    fetchDepartmentName()
+  }, [token])
 
   useEffect(() => { 
     fetchAll()
@@ -200,7 +234,7 @@ export function MemberDashboard({ onLogout }: { onLogout: () => void }) {
             <h1 className="text-4xl font-bold text-white tracking-tight">Member Dashboard</h1>
             <p className="text-gray-400 mt-1 flex items-center gap-2">
               <LayoutDashboard size={16} className="text-[#4fd1c5]" />
-              Track your tasks and upcoming events for <span className="text-white font-medium">{user?.department || 'Your Department'}</span>
+              Track your tasks and upcoming events for <span className="text-white font-medium">{departmentName}</span>
             </p>
           </div>
 
